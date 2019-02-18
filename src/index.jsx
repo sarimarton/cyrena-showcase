@@ -1,9 +1,7 @@
 import xs from 'xstream'
 import { run } from '@cycle/run'
-import { h } from '@cycle/react'
 import { makeDOMDriver } from '@cycle/react-dom'
 import React, { useState } from 'react'
-import ReactDOM from 'react-dom'
 
 
 /** @jsx pragma */
@@ -13,7 +11,7 @@ function pragma (node, attr, ...children) {
   return json
 }
 
-function ExampleReactComponent (props) {
+function ExampleReactComponent () {
   const [count, setCount] = useState(0)
 
   return (
@@ -24,15 +22,11 @@ function ExampleReactComponent (props) {
 }
 
 function main (sources) {
-  // const inc = Symbol();
-  // const inc$ = sources.react.select(inc).events('click');
-  //
-  // const count$ = inc$.fold(count => count + 1, 0);
-  //
   const vdom$ = xs.periodic(2000).map(i =>
     <>
       <h3>Example React Component:</h3>
       <ExampleReactComponent />
+
       <h3>Cycle JS Counter: {i}</h3>
     </>
   )
