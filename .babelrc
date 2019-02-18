@@ -1,0 +1,10 @@
+{
+  "plugins": [
+    ["@babel/plugin-proposal-pipeline-operator", { "proposal": "minimal" }],
+    ["@babel/plugin-transform-react-jsx", {
+      "pragma": "React.createElement",
+      "pragmaFrag": "React.Fragment",
+      "throwIfNamespace": false
+    }]
+  ]
+}

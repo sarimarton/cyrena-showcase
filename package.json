@@ -1,0 +1,32 @@
+{
+  "name": "cycle-composer",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel src/index.pug",
+    "build": "parcel build src/index.pug"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.3.3",
+    "@babel/plugin-proposal-pipeline-operator": "^7.3.2",
+    "babel-eslint": "^10.0.1",
+    "parcel": "^1.11.0",
+    "pug": "^2.0.3",
+    "standard": "^12.0.1"
+  },
+  "dependencies": {
+    "@cycle/react": "^2.0.0",
+    "@cycle/react-dom": "^2.0.0",
+    "@cycle/run": "^5.2.0",
+    "react": "^16.8.2",
+    "react-dom": "^16.8.2",
+    "xstream": "^11.10.0"
+  },
+  "standard": {
+    "parser": "babel-eslint"
+  }
+}
