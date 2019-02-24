@@ -22,8 +22,9 @@
     "@cycle/react": "^2.0.0",
     "@cycle/react-dom": "^2.0.0",
     "@cycle/run": "^5.2.0",
-    "react": "^16.8.2",
-    "react-dom": "^16.8.2",
+    "@cycle/state": "^1.2.0",
+    "react": "^16.8.3",
+    "react-dom": "^16.8.3",
     "xstream": "^11.10.0"
   },
   "standard": {
