@@ -1,40 +1,40 @@
 import xs from 'xstream'
 import cloneDeep from 'lodash/cloneDeep'
 
-const prefix = 'vsc-'
+const isComponent = node =>
+  typeof node.type === 'function'
 
-export function component (config, vdom) {
+const traverseVdom = fn => (node, path = []) => {
+  fn(node, path)
+
+  ;[node.props && node.props.children]
+    .flat()
+    .filter(_ => _)
+    .forEach((n, idx) => traverseVdom(fn)(n, [...path, { node, idx }]))
+}
+
+export const component = config => vdom => {
+  const _vdom = cloneDeep(vdom)
   const vdomProp = config.vdomProp
+  const additionalTraverseAction = config.additionalTraverseAction || (() => {})
 
-  const isComponent = node =>
-    typeof node.type === 'function'
+  const cmps = []
 
-  let cmps = []
-
-  const traverse = (node, parent = null, path = []) => {
-    const key = path[path.length - 1] || 0
+  const traverseAction = (node, path) => {
+    const parent = path[path.length - 1] || { node: undefined, idx: 0 }
 
     if (isComponent(node)) {
       cmps.push({
         cmp: node.type,
-        parent,
-        key
+        parent: parent.node,
+        key: parent.idx
       })
     }
 
-    if (node.$$typeof === Symbol.for('react.element')) {
-      node.key = node.key || prefix + path.join('.')
-    }
-
-    ;[node.props && node.props.children]
-      .flat()
-      .filter(_ => _)
-      .forEach((n, idx) => traverse(n, node, [...path, idx]))
+    additionalTraverseAction(node, path)
   }
 
-  let _vdom = cloneDeep(vdom)
-
-  traverse(_vdom)
+  traverseVdom(traverseAction)(_vdom)
 
   let sinks = cmps.map(cfg => cfg.cmp())
   let vdoms = sinks.map(sink => sink[vdomProp])
@@ -59,9 +59,17 @@ export function component (config, vdom) {
   }
 }
 
-export function cycleReactComponent (vdom) {
+export const cycleReactComponent = vdom => {
+  const reactKeyPrefix = 'vsc-'
+
   return component({
     vdomProp: 'react',
-    merge: []
-  }, vdom)
+    additionalTraverseAction: (node, path) => {
+      if (node.$$typeof === Symbol.for('react.element')) {
+        node.key =
+          node.key ||
+          reactKeyPrefix + path.map(p => p.idx).join('.')
+      }
+    }
+  })(vdom)
 }
