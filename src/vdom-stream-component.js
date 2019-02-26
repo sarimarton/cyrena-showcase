@@ -1,5 +1,6 @@
 import xs from 'xstream'
 import cloneDeep from 'lodash/cloneDeep'
+import zip from 'lodash/zip'
 
 const isComponent = node =>
   typeof node.type === 'function'
@@ -24,11 +25,7 @@ export const component = config => vdom => {
     const parent = path[path.length - 1] || { node: undefined, idx: 0 }
 
     if (isComponent(node)) {
-      cmps.push({
-        cmp: node.type,
-        parent: parent.node,
-        key: parent.idx
-      })
+      cmps.push({ node, parent })
     }
 
     additionalTraverseAction(node, path)
@@ -36,19 +33,24 @@ export const component = config => vdom => {
 
   traverseVdom(traverseAction)(_vdom)
 
-  let sinks = cmps.map(cfg => cfg.cmp())
+  let sinks = cmps.map(cfg => cfg.node.type())
   let vdoms = sinks.map(sink => sink[vdomProp])
 
   let vdom$ = xs.combine.apply(xs, vdoms)
     .map(vdoms => {
-      vdoms.forEach((vdom, idx) => {
-        const { children } = cmps[idx].parent.props
-        const { key } = cmps[idx]
+      zip(vdoms, cmps).forEach(([vdom, cmp]) => {
+        const idx = cmp.parent.idx
+        const props = cmp.parent.node.props
+        const originalNode = [props.children].flat()[idx]
+        const setter =
+          Array.isArray(props.children)
+            ? value => { props.children[idx] = value }
+            : value => { props.children = value }
 
-        children[key] = {
+        setter({
           ...vdom,
-          key: vdom.key || children[key].key
-        }
+          key: vdom.key || originalNode.key
+        })
       })
 
       return _vdom
