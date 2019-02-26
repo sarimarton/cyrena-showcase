@@ -56,7 +56,7 @@ export const component = config => vdom => {
         })
       })
 
-      return hiddenRoot.props.children[0]
+      return cloneDeep(hiddenRoot.props.children[0])
     })
 
   return {

@@ -31,7 +31,10 @@ function ExampleReactComponent () {
 
 function Combobox () {
   return {
-    react: xs.of(<div>combobox</div>)
+    react: xs.periodic(1000)
+      .map(counter =>
+        <div>combobox {counter}</div>
+      )
   }
 }
 
