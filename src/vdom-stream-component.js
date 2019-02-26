@@ -25,15 +25,7 @@ export const component = config => vdom => {
   const cmps = []
 
   const traverseAction = (node, path) => {
-    const parent = path[path.length - 1] ||
-      {
-        node: {
-          props: {
-            children: [{}]
-          }
-        },
-        idx: 0
-      }
+    const parent = path[path.length - 1] || { node: undefined, idx: 0 }
 
     if (isComponent(node)) {
       cmps.push({ node, parent })
