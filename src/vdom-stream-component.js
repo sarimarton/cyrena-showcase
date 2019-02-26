@@ -15,14 +15,25 @@ const traverseVdom = fn => (node, path = []) => {
 }
 
 export const component = config => vdom => {
-  const _vdom = cloneDeep(vdom)
+  let hiddenRoot = {
+    props: { children: [cloneDeep(vdom)] }
+  }
+
   const vdomProp = config.vdomProp
   const additionalTraverseAction = config.additionalTraverseAction || (() => {})
 
   const cmps = []
 
   const traverseAction = (node, path) => {
-    const parent = path[path.length - 1] || { node: undefined, idx: 0 }
+    const parent = path[path.length - 1] ||
+      {
+        node: {
+          props: {
+            children: [{}]
+          }
+        },
+        idx: 0
+      }
 
     if (isComponent(node)) {
       cmps.push({ node, parent })
@@ -31,7 +42,7 @@ export const component = config => vdom => {
     additionalTraverseAction(node, path)
   }
 
-  traverseVdom(traverseAction)(_vdom)
+  traverseVdom(traverseAction)(hiddenRoot)
 
   let sinks = cmps.map(cfg => cfg.node.type())
   let vdoms = sinks.map(sink => sink[vdomProp])
@@ -53,7 +64,7 @@ export const component = config => vdom => {
         })
       })
 
-      return _vdom
+      return hiddenRoot.props.children[0]
     })
 
   return {
