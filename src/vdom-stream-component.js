@@ -5,16 +5,16 @@ import zip from 'lodash/zip'
 const isComponent = node =>
   typeof node.type === 'function'
 
-const traverseVdom = fn => (node, path = []) => {
-  fn(node, path)
-
-  ;[node.props && node.props.children]
-    .flat()
-    .filter(_ => _)
-    .forEach((n, idx) => traverseVdom(fn)(n, [...path, { node, idx }]))
+const traverseVdom = action => (node, path = []) => {
+  if (action(node, path)) {
+    ;[node.props && node.props.children]
+      .flat()
+      .filter(_ => _)
+      .forEach((n, idx) => traverseVdom(action)(n, [...path, { node, idx }]))
+  }
 }
 
-export const component = config => vdom => {
+export const component = (sources, vdom, config) => {
   let hiddenRoot = {
     props: { children: [cloneDeep(vdom)] }
   }
@@ -26,18 +26,30 @@ export const component = config => vdom => {
 
   const traverseAction = (node, path) => {
     const parent = path[path.length - 1] || { node: undefined, idx: 0 }
+    const _isComponent = isComponent(node)
 
-    if (isComponent(node)) {
+    if (_isComponent) {
       cmps.push({ node, parent })
     }
 
     additionalTraverseAction(node, path)
+
+    return !_isComponent
   }
 
   traverseVdom(traverseAction)(hiddenRoot)
 
-  let sinks = cmps.map(cfg => cfg.node.type())
-  let vdoms = sinks.map(sink => sink[vdomProp])
+  let sinks = cmps.map(cfg =>
+    cfg.node.type({
+      sources,
+      key: cfg.node.key,
+      props: cfg.node.props
+    })
+  )
+
+  let vdoms = sinks.map(sink =>
+    sink[vdomProp]
+  )
 
   let vdom$ = xs.combine.apply(xs, vdoms)
     .map(vdoms => {
@@ -64,17 +76,26 @@ export const component = config => vdom => {
   }
 }
 
-export const cycleReactComponent = vdom => {
-  const reactKeyPrefix = 'vsc-'
+export const cycleReactComponent = (sources, vdom, otherSinks) => {
+  // This is a react component key prefix
+  const reactKeyPrefix = 'vsc-' + (sources.key || '')
 
-  return component({
+  const _config = {
+
+    // The vdom sink
     vdomProp: 'react',
+
+    // Prevent React warnings about lacking 'key' prop
     additionalTraverseAction: (node, path) => {
       if (node.$$typeof === Symbol.for('react.element')) {
         node.key =
           node.key ||
           reactKeyPrefix + path.map(p => p.idx).join('.')
       }
-    }
-  })(vdom)
+    },
+
+    otherSinks
+  }
+
+  return component(sources, vdom, _config)
 }

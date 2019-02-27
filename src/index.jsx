@@ -17,7 +17,7 @@ function ExampleReactComponent () {
   const [option, setOption] = useState('option2')
 
   return (
-    <div className='uk-card uk-card-primary uk-card-body uk-width-1-4@m'>
+    <div>
       <h3 className='uk-card-title'>Example React Component:</h3>
       <select value={option} onChange={e => { setOption(e.target.value) }}>
         <option>option1</option>
@@ -29,38 +29,73 @@ function ExampleReactComponent () {
   )
 }
 
-function Combobox () {
+function Timer () {
   return {
     react: xs.periodic(1000)
       .map(counter =>
-        <div>combobox {counter}</div>
+        <div>This is a timer: {counter}</div>
       )
   }
 }
 
-function main (sources) {
-  // const vdom$ = xs.periodic(2000)
-  //   .map(counter =>
-  //     <div className='uk-padding'>
-  //       <ExampleReactComponent counter={counter} />
-  //
-  //       <h3>Cycle JS Counter: {counter}</h3>
-  //     </div>
-  //   )
-  //
-  // return {
-  //   react: vdom$,
-  //   state: reducer$
-  // }
-
-  return component(
-    <div className='card'>
-      <Combobox />
+function Combobox () {
+  return {
+    react: xs.of(
       <div>
-        <div>mivan</div>
-        <Combobox />
+        <div>This is a combobox</div>
+        <select>
+          <option key='1'>Option 1</option>
+          <option key='2'>Option 2</option>
+        </select>
       </div>
+    ),
+    HTTP: xs.of({
+      url: 'http://example.org/',
+      category: 'search'
+    })
+  }
+}
+
+function ReactComponentWrapper (sources) {
+  return {
+    react: xs.of(sources.props.children)
+  }
+}
+
+function Card (sources) {
+  return component(sources,
+    <div className='uk-margin uk-padding-small uk-card-body uk-card-primary'>
+      {sources.props.children}
     </div>
+  )
+}
+
+function main (sources) {
+  const state$ = sources.state.stream
+
+  const initReducer$ = xs.of(function initReducer (prevState) {
+    return { count: 0 }
+  })
+
+  const reducer$ = xs.merge(initReducer$)
+
+  return component(sources,
+    <div className='uk-padding-small uk-width-1-4@m'>
+      <Card>
+        <ReactComponentWrapper>
+          <ExampleReactComponent />
+        </ReactComponentWrapper>
+      </Card>
+      <Card>
+        <Timer />
+      </Card>
+      <Card>
+        <Combobox />
+      </Card>
+    </div>,
+    {
+      state: reducer$
+    }
   )
 }
 
@@ -68,4 +103,4 @@ const drivers = {
   react: makeDOMDriver(document.getElementById('app'))
 }
 
-run((main), drivers)
+run(withState(main), drivers)
