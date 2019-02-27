@@ -1,6 +1,12 @@
 import xs from 'xstream'
+
 import cloneDeep from 'lodash/cloneDeep'
 import zip from 'lodash/zip'
+import mapValues from 'lodash/fp/mapValues'
+import castArray from 'lodash/castArray'
+import mergeWith from 'lodash/mergeWith'
+import compact from 'lodash/compact'
+import omit from 'lodash/omit'
 
 const isComponent = node =>
   typeof node.type === 'function'
@@ -39,6 +45,8 @@ export const component = (sources, vdom, config) => {
 
   traverseVdom(traverseAction)(hiddenRoot)
 
+  // Invoke cycle components in the vdom, and get the sinks
+  // Also pass key and props to them
   let sinks = cmps.map(cfg =>
     cfg.node.type({
       sources,
@@ -47,10 +55,12 @@ export const component = (sources, vdom, config) => {
     })
   )
 
+  // Get the vdoms from among the sinks
   let vdoms = sinks.map(sink =>
     sink[vdomProp]
   )
 
+  // Combine the vdom streams and map them placed into the original structure
   let vdom$ = xs.combine.apply(xs, vdoms)
     .map(vdoms => {
       zip(vdoms, cmps).forEach(([vdom, cmp]) => {
@@ -68,11 +78,27 @@ export const component = (sources, vdom, config) => {
         })
       })
 
+      // Without cloning, React won't pick up the changes and the view
+      // doesn't refresh
       return cloneDeep(hiddenRoot.props.children[0])
     })
 
+  // Gather all the other sinks which is not the vdom and merge them together
+  // by type
+  let allOtherSinksOfAllComponents =
+    sinks.reduce(
+      (acc, next) => mergeWith(
+        acc,
+        omit(next, vdomProp),
+        (addition, src) => compact([...castArray(addition), src])
+      ),
+      mapValues(castArray)(config.otherSinks || {})
+    )
+    |> mapValues(sinks => xs.merge.apply(xs, sinks))
+
   return {
-    [vdomProp]: vdom$
+    [vdomProp]: vdom$,
+    ...allOtherSinksOfAllComponents
   }
 }
 

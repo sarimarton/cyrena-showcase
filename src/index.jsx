@@ -1,6 +1,7 @@
 import xs from 'xstream'
 import { run } from '@cycle/run'
 import { makeDOMDriver } from '@cycle/react-dom'
+import { makeHTTPDriver } from '@cycle/http'
 import { withState } from '@cycle/state'
 import React, { useState } from 'react'
 
@@ -42,15 +43,15 @@ function Combobox () {
   return {
     react: xs.of(
       <div>
-        <div>This is a combobox</div>
-        <select>
-          <option key='1'>Option 1</option>
-          <option key='2'>Option 2</option>
+        <div key='3'>This is a combobox</div>
+        <select key='4'>
+          <option key='1'>option1</option>
+          <option key='2'>option2</option>
         </select>
       </div>
     ),
     HTTP: xs.of({
-      url: 'http://example.org/',
+      url: '?mivan',
       category: 'search'
     })
   }
@@ -73,9 +74,9 @@ function Card (sources) {
 function main (sources) {
   const state$ = sources.state.stream
 
-  const initReducer$ = xs.of(function initReducer (prevState) {
-    return { count: 0 }
-  })
+  const initReducer$ = xs.of(prevState =>
+    ({ comboValue: 'option1' })
+  )
 
   const reducer$ = xs.merge(initReducer$)
 
@@ -100,7 +101,8 @@ function main (sources) {
 }
 
 const drivers = {
-  react: makeDOMDriver(document.getElementById('app'))
+  react: makeDOMDriver(document.getElementById('app')),
+  HTTP: makeHTTPDriver()
 }
 
 run(withState(main), drivers)
