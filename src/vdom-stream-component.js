@@ -44,7 +44,7 @@ export const component = (sources, vdom, config) => {
         parent,
         // Invoke cycle components in the vdom, and get the sinks
         // Also pass key and props to them
-        sinks: node.type({ sources, ...pick(node, ['key', 'props']) })
+        sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) })
       })
     }
 
