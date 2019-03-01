@@ -4,7 +4,7 @@ import { makeDOMDriver } from '@cycle/react-dom'
 import { makeHTTPDriver } from '@cycle/http'
 import { withState } from '@cycle/state'
 import { useState } from 'react'
-import { h, makeComponent } from '@cycle/react'
+import { h } from '@cycle/react'
 
 import { cycleReactComponent as component } from './vdom-stream-component.js'
 
@@ -13,27 +13,29 @@ import { cycleReactComponent as component } from './vdom-stream-component.js'
 const pragma = (node, attr, ...children) =>
   h(node, attr || {}, children)
 
-function ExampleReactComponent () {
+function ReactComponent () {
   const [option, setOption] = useState('option2')
 
   return (
     <div>
-      <h3 className='uk-card-title'>React Component:</h3>
+      <h3 className='uk-card-title'>React Component</h3>
       <select value={option} onChange={e => { setOption(e.target.value) }}>
         <option>option1</option>
         <option>option2</option>
       </select>
-      <div>value: {option}</div>
-      <div>Cycle JS component value: {}</div>
+      <div>state.comboValue: {option}</div>
     </div>
   )
 }
 
 function Timer () {
   return {
-    react: xs.of(1000)
+    react: xs.periodic(1000).startWith(0)
       .map(counter =>
-        <div>This is a timer: {counter}</div>
+        <div>
+          <h3 className='uk-card-title'>Timer</h3>
+          <div>{counter}</div>
+        </div>
       )
   }
 }
@@ -46,8 +48,9 @@ function Counter (sources) {
 
   const vdom$ = count$.map(i =>
     <div>
-      <h1>Counter: {i}</h1>
+      <h3 className='uk-card-title'>{sources.props.title || 'Counter'}</h3>
       <button sel={inc}>Incremenet</button>
+      <div>{i}</div>
     </div>
   )
 
@@ -70,13 +73,13 @@ function Combobox (sources) {
   return {
     react: state$.map(state => {
       return (
-        <div key='6'>
-          <h3 className='uk-card-title'>Cycle JS component:</h3>
-          <div key='3'>This is a combobox: {state.comboValue}</div>
-          <select sel={select} key='4' defaultValue={state.comboValue}>
-            <option key='1'>option1</option>
-            <option key='2'>option2</option>
+        <div>
+          <h3 className='uk-card-title'>Cycle JS component</h3>
+          <select sel={select} defaultValue={state.comboValue}>
+            <option>option1</option>
+            <option>option2</option>
           </select>
+          <div>state.comboValue: {state.comboValue}</div>
         </div>
       )
     }),
@@ -96,40 +99,53 @@ function ReactComponentWrapper (sources) {
 
 function Card (sources) {
   return component(sources,
-    <div className='uk-margin-left uk-width-1-5 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'>
+    <div className='uk-margin-right uk-width-1-6 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'>
       {sources.props.children}
     </div>
   )
 }
 
+function ShowState( sources) {
+  return {
+    react: sources.state.stream.map(state => <div>{state.comboValue}</div>)
+  }
+}
+
 function main (sources) {
   const state$ = sources.state.stream
 
-  const initReducer$ = xs.of(prevState =>
-    ({ comboValue: 'option2' })
+  const reducer$ = xs.of(() => ({ comboValue: 'option2' }))
+
+  console.log(
+    xs.periodic(100) instanceof Object.getPrototypeOf(xs.of()).constructor
   )
 
-  const reducer$ = xs.merge(initReducer$)
-
   return component(sources,
-    <div key='x' className='uk-padding-small uk-flex'>
-      <Card>
-        <Combobox />
-      </Card>
-      <Card>
-        <ReactComponentWrapper>
-          <ExampleReactComponent />
-        </ReactComponentWrapper>
-      </Card>
-      <Card>
-        <Timer />
-      </Card>
-      <Card>
-        <Counter />
-      </Card>
-      <Card>
-        <Counter />
-      </Card>
+    <div className='uk-padding-small'>
+      <div className='uk-flex uk-margin'>
+        <Card>
+          <Combobox />
+        </Card>
+        <Card>
+          <ReactComponentWrapper>
+            <ReactComponent />
+          </ReactComponentWrapper>
+        </Card>
+        <Card>
+          <Timer />
+        </Card>
+        <Card>
+          <Counter title='Counter' />
+        </Card>
+        <Card>
+          <Counter title='Another counter' />
+        </Card>
+      </div>
+      <div className='uk-flex'>
+        <Card>
+          <ShowState />
+        </Card>
+      </div>
     </div>,
     {
       state: reducer$

@@ -23,35 +23,39 @@ const traverseVdom = traverseAction => (node, path = [], acc = []) => {
   return acc
 }
 
+const wrapVdom = vdom => ({
+  props: { children: [vdom] }
+})
+
 export const component = (sources, vdom, config) => {
   // Wrap the whole tree in an additional root node to
-  let hiddenRoot = {
-    props: { children: [cloneDeep(vdom)] }
-  }
+  const root = wrapVdom(cloneDeep(vdom))
 
   const vdomProp = config.vdomProp
   const additionalTraverseAction = config.additionalTraverseAction || (() => {})
 
-  const traverseAction = (node, path, acc) => {
-    const parent = path[path.length - 1] || { node: undefined, idx: 0 }
+  const traverseAction = (node, path, cmpList) => {
     const _isComponent = isComponent(node)
 
     additionalTraverseAction(node, path)
 
     if (_isComponent) {
-      acc.push({
+      cmpList.push({
         node,
-        parent,
+        path: path.map(n => n.idx),
         // Invoke cycle components in the vdom, and get the sinks
         // Also pass key and props to them
-        sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) })
+        sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) }),
+
+        // Save the latest emit for change detection
+        latestVdomEmit: null
       })
     }
 
     return !_isComponent
   }
 
-  const cmps = traverseVdom(traverseAction)(hiddenRoot)
+  const cmps = traverseVdom(traverseAction)(root)
 
   // Get the vdoms from among the sinks
   const vdoms = cmps.map(cmp => cmp.sinks[vdomProp])
@@ -59,21 +63,26 @@ export const component = (sources, vdom, config) => {
   // Combine the vdom streams and map them placed into the original structure
   const vdom$ = xs.combine.apply(xs, vdoms)
     .map(vdoms => {
+      const root = wrapVdom(cloneDeep(vdom))
+
       zip(vdoms, cmps).forEach(([vdom, cmp]) => {
-        const idx = cmp.parent.idx
-        const props = cmp.parent.node.props
-        const originalNode = [props.children].flat()[idx]
+        let n = root
+        for (let i = 0; i < cmp.path.length - 1; i++) {
+          n = castArray(n.props.children)[cmp.path[i]]
+        }
+
+        const props = n.props
+        const idx = cmp.path[cmp.path.length - 1]
+        const originalNode = castArray(props.children)[idx]
         const setter =
           Array.isArray(props.children)
             ? value => { props.children[idx] = value }
             : value => { props.children = value }
 
-        setter({ ...vdom, key: vdom.key || originalNode.key })
+        setter(({ ...(vdom), key: vdom.key || originalNode.key }))
       })
 
-      // Without cloning, React won't pick up the changes and the view
-      // doesn't refresh
-      return cloneDeep(hiddenRoot.props.children[0])
+      return root.props.children[0]
     })
 
   const sinks = cmps.map(cmp => cmp.sinks)
@@ -103,7 +112,6 @@ export const cycleReactComponent = (sources, vdom, otherSinks) => {
   const reactKeyPrefix = 'vsc-' + (sources.key || '')
 
   const _config = {
-
     // The name of the vdom sink
     vdomProp: 'react',
 
