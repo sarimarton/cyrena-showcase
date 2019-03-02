@@ -9,33 +9,37 @@ import compact from 'lodash/compact'
 import pick from 'lodash/pick'
 import omit from 'lodash/omit'
 
-const isComponent = node =>
+const isComponentNode = node =>
   typeof node.type === 'function'
 
-const traverseVdom = traverseAction => (node, path = [], acc = []) => {
-  if (traverseAction(node, path, acc)) {
+const streamConstructor =
+  Object.getPrototypeOf(xs.of()).constructor
+
+const isStreamNode = node =>
+  node instanceof streamConstructor
+
+const traverseVdom = traverseAction => (node, path = [], cmpList = [], streamNodeList = []) => {
+  if (traverseAction(node, path, cmpList, streamNodeList)) {
     compact(castArray(node.props && node.props.children))
       .forEach((n, idx) => {
-        traverseVdom(traverseAction)(n, [...path, { node, idx }], acc)
+        traverseVdom(traverseAction)(n, [...path, { node, idx }], cmpList, streamNodeList)
       })
   }
 
-  return acc
+  return [cmpList, streamNodeList]
 }
-
-const wrapVdom = vdom => ({
-  props: { children: [vdom] }
-})
 
 export const component = (sources, vdom, config) => {
   // Wrap the whole tree in an additional root node to
-  const root = wrapVdom(cloneDeep(vdom))
+  const root = ({
+    props: { children: [cloneDeep(vdom)] }
+  })
 
   const vdomProp = config.vdomProp
   const additionalTraverseAction = config.additionalTraverseAction || (() => {})
 
-  const traverseAction = (node, path, cmpList) => {
-    const _isComponent = isComponent(node)
+  const traverseAction = (node, path, cmpList, streamNodeList) => {
+    const _isComponent = isComponentNode(node)
 
     additionalTraverseAction(node, path)
 
@@ -45,17 +49,21 @@ export const component = (sources, vdom, config) => {
         path: path.map(n => n.idx),
         // Invoke cycle components in the vdom, and get the sinks
         // Also pass key and props to them
-        sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) }),
+        sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) })
+      })
+    }
 
-        // Save the latest emit for change detection
-        latestVdomEmit: null
+    if (isStreamNode(node)) {
+      streamNodeList.push({
+        node,
+        path: path.map(n => n.idx)
       })
     }
 
     return !_isComponent
   }
 
-  const cmps = traverseVdom(traverseAction)(root)
+  const [cmps, streamNodes] = traverseVdom(traverseAction)(root)
 
   // Get the vdoms from among the sinks
   const vdoms = cmps.map(cmp => cmp.sinks[vdomProp])
@@ -63,10 +71,10 @@ export const component = (sources, vdom, config) => {
   // Combine the vdom streams and map them placed into the original structure
   const vdom$ = xs.combine.apply(xs, vdoms)
     .map(vdoms => {
-      const root = wrapVdom(cloneDeep(vdom))
+      const _root = cloneDeep(root)
 
       zip(vdoms, cmps).forEach(([vdom, cmp]) => {
-        let n = root
+        let n = _root
         for (let i = 0; i < cmp.path.length - 1; i++) {
           n = castArray(n.props.children)[cmp.path[i]]
         }
@@ -82,7 +90,7 @@ export const component = (sources, vdom, config) => {
         setter(({ ...(vdom), key: vdom.key || originalNode.key }))
       })
 
-      return root.props.children[0]
+      return _root.props.children[0]
     })
 
   const sinks = cmps.map(cmp => cmp.sinks)
@@ -108,9 +116,6 @@ export const component = (sources, vdom, config) => {
 }
 
 export const cycleReactComponent = (sources, vdom, otherSinks) => {
-  // This is a react component key prefix
-  const reactKeyPrefix = 'vsc-' + (sources.key || '')
-
   const _config = {
     // The name of the vdom sink
     vdomProp: 'react',
@@ -118,9 +123,7 @@ export const cycleReactComponent = (sources, vdom, otherSinks) => {
     // Prevent React warnings about lacking 'key' prop
     additionalTraverseAction: (node, path) => {
       if (node.$$typeof === Symbol.for('react.element')) {
-        node.key =
-          node.key ||
-          reactKeyPrefix + path.map(p => p.idx).join('.')
+        node.key = node.key || path[path.length - 1].idx
       }
     },
 

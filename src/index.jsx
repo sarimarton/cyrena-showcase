@@ -116,10 +116,6 @@ function main (sources) {
 
   const reducer$ = xs.of(() => ({ comboValue: 'option2' }))
 
-  console.log(
-    xs.periodic(100) instanceof Object.getPrototypeOf(xs.of()).constructor
-  )
-
   return component(sources,
     <div className='uk-padding-small'>
       <div className='uk-flex uk-margin'>
@@ -144,6 +140,9 @@ function main (sources) {
       <div className='uk-flex'>
         <Card>
           <ShowState />
+        </Card>
+        <Card>
+          {/*state$.map(state => state.comboValue)*/}
         </Card>
       </div>
     </div>,
