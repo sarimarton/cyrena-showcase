@@ -56,6 +56,18 @@ const replaceNode = (root, path, value) => {
   }
 }
 
+const getAllSinksMergedOtherThanVdom = (vdomProp, mergeFn, sinks) =>
+  mapValues(sinks => mergeFn(sinks))(
+    sinks.reduce(
+      (acc, next) => mergeWith(
+        acc,
+        omit(next, vdomProp),
+        (addition, src) => compact([...castArray(addition), src])
+      ),
+      {}
+    )
+  )
+
 export const component = (sources, vdom, config) => {
   // Wrap the whole tree in an additional root node to
   const root = ({
@@ -99,6 +111,8 @@ export const component = (sources, vdom, config) => {
 
   // Combine the vdom and stream node streams
   // and map them placed into the original structure
+  // We should probably break these lists out into separate combine
+  // calls, but my attempt failed... this is such a fragile business here
   let vdom$ = xs.combine(...vdoms, ...streamNodeValues)
     .map(vdomsAndStreamNodeValues => {
       const _root = cloneDeep(root)
@@ -117,20 +131,13 @@ export const component = (sources, vdom, config) => {
       return _root.props.children[0]
     })
 
-  const sinks = cmps.map(cmp => cmp.sinks)
-
   // Gather all the other sinks which are not the vdom and merge them together
   // by type
   const allOtherSinksOfAllComponents =
-    mapValues(sinks => xs.merge(...sinks))(
-      sinks.reduce(
-        (acc, next) => mergeWith(
-          acc,
-          omit(next, vdomProp),
-          (addition, src) => compact([...castArray(addition), src])
-        ),
-        mapValues(castArray)(config.otherSinks || {})
-      )
+    getAllSinksMergedOtherThanVdom(
+      vdomProp,
+      sinks => xs.merge(...sinks),
+      [config.otherSinks || {}, ...cmps.map(cmp => cmp.sinks)]
     )
 
   return {
