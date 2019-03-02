@@ -29,6 +29,22 @@ const traverseVdom = traverseAction => (node, path = [], cmpList = [], streamNod
   return [cmpList, streamNodeList]
 }
 
+const replaceNode = (root, path, value) => {
+  let n = root
+  for (let i = 0; i < path.length - 1; i++) {
+    n = castArray(n.props.children)[path[i]]
+  }
+
+  const props = n.props
+  const idx = path[path.length - 1]
+
+  if (Array.isArray(props.children)) {
+    props.children[idx] = value
+  } else {
+    props.children = value
+  }
+}
+
 export const component = (sources, vdom, config) => {
   // Wrap the whole tree in an additional root node to
   const root = ({
@@ -74,20 +90,7 @@ export const component = (sources, vdom, config) => {
       const _root = cloneDeep(root)
 
       zip(vdoms, cmps).forEach(([vdom, cmp]) => {
-        let n = _root
-        for (let i = 0; i < cmp.path.length - 1; i++) {
-          n = castArray(n.props.children)[cmp.path[i]]
-        }
-
-        const props = n.props
-        const idx = cmp.path[cmp.path.length - 1]
-        const originalNode = castArray(props.children)[idx]
-        const setter =
-          Array.isArray(props.children)
-            ? value => { props.children[idx] = value }
-            : value => { props.children = value }
-
-        setter(({ ...(vdom), key: vdom.key || originalNode.key }))
+        replaceNode(_root, cmp.path, { ...vdom, key: vdom.key })
       })
 
       return _root.props.children[0]
