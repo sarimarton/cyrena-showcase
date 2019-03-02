@@ -100,6 +100,8 @@ function ReactComponentWrapper (sources) {
 function Card (sources) {
   return component(sources,
     <div className='uk-margin-right uk-width-1-6 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'>
+      {sources.props.title &&
+        <h3 className='uk-card-title'>{sources.props.title}</h3>}
       {sources.props.children}
     </div>
   )
@@ -138,12 +140,15 @@ function main (sources) {
         </Card>
       </div>
       <div className='uk-flex'>
-        <Card>
+        <Card title='Get state in nested component'>
           <ShowState />
         </Card>
-        <Card>
-          Stream text node:
+        <Card title='Stream text node'>
+          Combobox value:&nbsp;
           {state$.map(state => state.comboValue)}
+        </Card>
+        <Card title={state$.map(state => `Stream prop: ${state.comboValue}`)} />
+        <Card title='Stream prop on DOM prop'>
         </Card>
       </div>
     </div>,

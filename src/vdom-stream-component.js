@@ -23,23 +23,33 @@ const cloneDeep = obj =>
 
 const traverseVdom = traverseAction => (node, path = [], cmpList = [], streamNodeList = []) => {
   if (traverseAction(node, path, cmpList, streamNodeList)) {
-    compact(castArray(node.props && node.props.children))
-      .forEach((n, idx) => {
+    const children = Array.isArray(node)
+      ? node
+      : castArray(node.props && node.props.children)
+
+    children.forEach((n, idx) => {
+      if (n) {
         traverseVdom(traverseAction)(n, [...path, { node, idx }], cmpList, streamNodeList)
-      })
+      }
+    })
   }
 
   return [cmpList, streamNodeList]
 }
 
 const replaceNode = (root, path, value) => {
-  let i, node = root
+  let node = root
+  let i
 
   for (i = 0; i < path.length - 1; i++) {
-    node = castArray(node.props.children)[path[i]]
+    node = Array.isArray(node)
+      ? node
+      : castArray(node.props.children)[path[i]]
   }
 
-  if (Array.isArray(node.props.children)) {
+  if (Array.isArray(node)) {
+    node[path[i]] = value
+  } else if (Array.isArray(node.props.children)) {
     node.props.children[path[i]] = value
   } else {
     node.props.children = value
@@ -56,11 +66,11 @@ export const component = (sources, vdom, config) => {
   const additionalTraverseAction = config.additionalTraverseAction || (() => {})
 
   const traverseAction = (node, path, cmpList, streamNodeList) => {
-    const _isComponent = isComponentNode(node)
+    const isComponent = isComponentNode(node)
 
     additionalTraverseAction(node, path)
 
-    if (_isComponent) {
+    if (isComponent) {
       cmpList.push({
         path: path.map(n => n.idx),
         // Invoke cycle components in the vdom, and get the sinks
@@ -76,7 +86,7 @@ export const component = (sources, vdom, config) => {
       })
     }
 
-    return !_isComponent
+    return !isComponent
   }
 
   const [cmps, streamNodes] = traverseVdom(traverseAction)(root)
@@ -109,7 +119,7 @@ export const component = (sources, vdom, config) => {
 
   const sinks = cmps.map(cmp => cmp.sinks)
 
-  // Gather all the other sinks which is not the vdom and merge them together
+  // Gather all the other sinks which are not the vdom and merge them together
   // by type
   const allOtherSinksOfAllComponents =
     mapValues(sinks => xs.merge(...sinks))(
