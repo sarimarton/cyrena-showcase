@@ -1,6 +1,6 @@
 import xs from 'xstream'
 
-import cloneDeep from 'lodash/cloneDeep'
+import cloneDeepWith from 'lodash/cloneDeepWith'
 import zip from 'lodash/zip'
 import mapValues from 'lodash/fp/mapValues'
 import castArray from 'lodash/castArray'
@@ -18,6 +18,9 @@ const streamConstructor =
 const isStreamNode = node =>
   node instanceof streamConstructor
 
+const cloneDeep = obj =>
+  cloneDeepWith(obj, value => isStreamNode(value) ? value : undefined)
+
 const traverseVdom = traverseAction => (node, path = [], cmpList = [], streamNodeList = []) => {
   if (traverseAction(node, path, cmpList, streamNodeList)) {
     compact(castArray(node.props && node.props.children))
@@ -30,18 +33,16 @@ const traverseVdom = traverseAction => (node, path = [], cmpList = [], streamNod
 }
 
 const replaceNode = (root, path, value) => {
-  let n = root
-  for (let i = 0; i < path.length - 1; i++) {
-    n = castArray(n.props.children)[path[i]]
+  let i, node = root
+
+  for (i = 0; i < path.length - 1; i++) {
+    node = castArray(node.props.children)[path[i]]
   }
 
-  const props = n.props
-  const idx = path[path.length - 1]
-
-  if (Array.isArray(props.children)) {
-    props.children[idx] = value
+  if (Array.isArray(node.props.children)) {
+    node.props.children[path[i]] = value
   } else {
-    props.children = value
+    node.props.children = value
   }
 }
 
@@ -61,7 +62,6 @@ export const component = (sources, vdom, config) => {
 
     if (_isComponent) {
       cmpList.push({
-        node,
         path: path.map(n => n.idx),
         // Invoke cycle components in the vdom, and get the sinks
         // Also pass key and props to them
@@ -71,8 +71,8 @@ export const component = (sources, vdom, config) => {
 
     if (isStreamNode(node)) {
       streamNodeList.push({
-        node,
-        path: path.map(n => n.idx)
+        path: path.map(n => n.idx),
+        stream: node
       })
     }
 
@@ -84,13 +84,24 @@ export const component = (sources, vdom, config) => {
   // Get the vdoms from among the sinks
   const vdoms = cmps.map(cmp => cmp.sinks[vdomProp])
 
-  // Combine the vdom streams and map them placed into the original structure
-  const vdom$ = xs.combine.apply(xs, vdoms)
-    .map(vdoms => {
+  // Get the stream node values
+  const streamNodeValues = streamNodes.map(n => n.stream)
+
+  // Combine the vdom and stream node streams
+  // and map them placed into the original structure
+  let vdom$ = xs.combine(...vdoms, ...streamNodeValues)
+    .map(vdomsAndStreamNodeValues => {
       const _root = cloneDeep(root)
+
+      const vdoms = vdomsAndStreamNodeValues.slice(0, cmps.length)
+      const streamNodeValues = vdomsAndStreamNodeValues.slice(cmps.length)
 
       zip(vdoms, cmps).forEach(([vdom, cmp]) => {
         replaceNode(_root, cmp.path, { ...vdom, key: vdom.key })
+      })
+
+      zip(streamNodeValues, streamNodes).forEach(([streamNodeValue, streamNode]) => {
+        replaceNode(_root, streamNode.path, streamNodeValue)
       })
 
       return _root.props.children[0]
@@ -101,7 +112,7 @@ export const component = (sources, vdom, config) => {
   // Gather all the other sinks which is not the vdom and merge them together
   // by type
   const allOtherSinksOfAllComponents =
-    mapValues(sinks => xs.merge.apply(xs, sinks))(
+    mapValues(sinks => xs.merge(...sinks))(
       sinks.reduce(
         (acc, next) => mergeWith(
           acc,

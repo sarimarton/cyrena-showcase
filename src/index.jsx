@@ -30,7 +30,7 @@ function ReactComponent () {
 
 function Timer () {
   return {
-    react: xs.periodic(1000).startWith(0)
+    react: xs.periodic(1000).startWith(-1)
       .map(counter =>
         <div>
           <h3 className='uk-card-title'>Timer</h3>
@@ -105,7 +105,7 @@ function Card (sources) {
   )
 }
 
-function ShowState( sources) {
+function ShowState (sources) {
   return {
     react: sources.state.stream.map(state => <div>{state.comboValue}</div>)
   }
@@ -142,7 +142,8 @@ function main (sources) {
           <ShowState />
         </Card>
         <Card>
-          {/*state$.map(state => state.comboValue)*/}
+          Stream text node:
+          {state$.map(state => state.comboValue)}
         </Card>
       </div>
     </div>,
