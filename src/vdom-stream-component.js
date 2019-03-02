@@ -19,7 +19,11 @@ const isStreamNode = node =>
   node instanceof streamConstructor
 
 const cloneDeep = obj =>
-  cloneDeepWith(obj, value => isStreamNode(value) ? value : undefined)
+  cloneDeepWith(obj, value =>
+    isStreamNode(value)
+      ? value
+      : undefined
+  )
 
 const traverseVdom = traverseAction => (node, path = [], cmpList = [], streamNodeList = []) => {
   if (traverseAction(node, path, cmpList, streamNodeList)) {
@@ -36,6 +40,32 @@ const traverseVdom = traverseAction => (node, path = [], cmpList = [], streamNod
 
   return [cmpList, streamNodeList]
 }
+
+const getTraverseAction =
+  (sources, additionalTraverseAction) =>
+    (node, path, cmpList, streamNodeList) => {
+      const isComponent = isComponentNode(node)
+
+      additionalTraverseAction(node, path)
+
+      if (isComponent) {
+        cmpList.push({
+          path: path.map(n => n.idx),
+          // Invoke cycle components in the vdom, and get the sinks
+          // Also pass key and props to them
+          sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) })
+        })
+      }
+
+      if (isStreamNode(node)) {
+        streamNodeList.push({
+          path: path.map(n => n.idx),
+          stream: node
+        })
+      }
+
+      return !isComponent
+    }
 
 const replaceNode = (root, path, value) => {
   let node = root
@@ -75,31 +105,11 @@ export const component = (sources, vdom, config) => {
   })
 
   const vdomProp = config.vdomProp
-  const additionalTraverseAction = config.additionalTraverseAction || (() => {})
 
-  const traverseAction = (node, path, cmpList, streamNodeList) => {
-    const isComponent = isComponentNode(node)
-
-    additionalTraverseAction(node, path)
-
-    if (isComponent) {
-      cmpList.push({
-        path: path.map(n => n.idx),
-        // Invoke cycle components in the vdom, and get the sinks
-        // Also pass key and props to them
-        sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) })
-      })
-    }
-
-    if (isStreamNode(node)) {
-      streamNodeList.push({
-        path: path.map(n => n.idx),
-        stream: node
-      })
-    }
-
-    return !isComponent
-  }
+  const traverseAction = getTraverseAction(
+    sources,
+    config.additionalTraverseAction || (() => {})
+  )
 
   const [cmps, streamNodes] = traverseVdom(traverseAction)(root)
 
@@ -121,6 +131,9 @@ export const component = (sources, vdom, config) => {
       const streamNodeValues = vdomsAndStreamNodeValues.slice(cmps.length)
 
       zip(vdoms, cmps).forEach(([vdom, cmp]) => {
+        if (vdom.key == undefined) {
+          debugger
+        }
         replaceNode(_root, cmp.path, { ...vdom, key: vdom.key })
       })
 

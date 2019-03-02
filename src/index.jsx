@@ -18,7 +18,6 @@ function ReactComponent () {
 
   return (
     <div>
-      <h3 className='uk-card-title'>React Component</h3>
       <select value={option} onChange={e => { setOption(e.target.value) }}>
         <option>option1</option>
         <option>option2</option>
@@ -31,12 +30,7 @@ function ReactComponent () {
 function Timer () {
   return {
     react: xs.periodic(1000).startWith(-1)
-      .map(counter =>
-        <div>
-          <h3 className='uk-card-title'>Timer</h3>
-          <div>{counter}</div>
-        </div>
-      )
+      .map(counter => <div>{counter}</div>)
   }
 }
 
@@ -46,17 +40,12 @@ function Counter (sources) {
 
   const count$ = inc$.fold(count => count + 1, 0)
 
-  const vdom$ = count$.map(i =>
+  return component(sources,
     <div>
-      <h3 className='uk-card-title'>{sources.props.title || 'Counter'}</h3>
       <button sel={inc}>Incremenet</button>
-      <div>{i}</div>
+      <div>{count$}</div>
     </div>
   )
-
-  return {
-    react: vdom$
-  }
 }
 
 function Combobox (sources) {
@@ -70,14 +59,32 @@ function Combobox (sources) {
       .map(event => event.target.value)
       .map(value => state => ({ ...state, comboValue: value }))
 
+  // return component(sources,
+  //   <div>
+  //     <div>Color:</div>
+  //     <select sel={select}>
+  //       <option value='auto'>auto</option>
+  //       <option value='red'>red</option>
+  //     </select>
+  //     <div>state.comboValue: {state$.map(s => s.comboValue)}</div>
+  //   </div>,
+  //   {
+  //     state: reducer$,
+  //     HTTP: xs.of({
+  //       url: '?example-http-request',
+  //       category: 'search'
+  //     })
+  //   }
+  // )
+
   return {
     react: state$.map(state => {
       return (
         <div>
-          <h3 className='uk-card-title'>Cycle JS component</h3>
+          <div>Color:</div>
           <select sel={select} defaultValue={state.comboValue}>
-            <option>option1</option>
-            <option>option2</option>
+            <option value='auto'>auto</option>
+            <option value='red'>red</option>
           </select>
           <div>state.comboValue: {state.comboValue}</div>
         </div>
@@ -99,7 +106,10 @@ function ReactComponentWrapper (sources) {
 
 function Card (sources) {
   return component(sources,
-    <div className='uk-margin-right uk-width-1-6 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'>
+    <div
+      className='uk-margin-right uk-width-1-6 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'
+      {...sources.props}
+    >
       {sources.props.title &&
         <h3 className='uk-card-title'>{sources.props.title}</h3>}
       {sources.props.children}
@@ -116,27 +126,27 @@ function ShowState (sources) {
 function main (sources) {
   const state$ = sources.state.stream
 
-  const reducer$ = xs.of(() => ({ comboValue: 'option2' }))
+  const reducer$ = xs.of(() => ({ comboValue: 'red' }))
 
   return component(sources,
     <div className='uk-padding-small'>
       <div className='uk-flex uk-margin'>
-        <Card>
+        <Card title='Cycle JS component'>
           <Combobox />
         </Card>
-        <Card>
+        <Card title='React Component'>
           <ReactComponentWrapper>
             <ReactComponent />
           </ReactComponentWrapper>
         </Card>
-        <Card>
+        <Card title='Timer'>
           <Timer />
         </Card>
-        <Card>
-          <Counter title='Counter' />
+        <Card title='Counter'>
+          <Counter />
         </Card>
-        <Card>
-          <Counter title='Another counter' />
+        <Card title='Another counter'>
+          <Counter />
         </Card>
       </div>
       <div className='uk-flex'>
@@ -147,8 +157,11 @@ function main (sources) {
           Combobox value:&nbsp;
           {state$.map(state => state.comboValue)}
         </Card>
-        <Card title={state$.map(state => `Stream prop: ${state.comboValue}`)} />
-        <Card title='Stream prop on DOM prop'>
+        <Card title={state$.map(state => `Stream travelling through prop: ${state.comboValue}`)} />
+        <Card title='Stream DOM prop!' style={{background: state$.map(state => state.comboValue)}}>
+          {'{ style: { background: \''}
+          {state$.map(state => state.comboValue)}
+          {' \'}}'}
         </Card>
       </div>
     </div>,
