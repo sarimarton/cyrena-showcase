@@ -4,14 +4,10 @@ import { makeDOMDriver } from '@cycle/react-dom'
 import { makeHTTPDriver } from '@cycle/http'
 import { withState } from '@cycle/state'
 import { useState } from 'react'
-import { h } from '@cycle/react'
 
-import { cycleReactComponent as component } from './vdom-stream-component.js'
+import { pragma, cycleReactComponent as component } from './vdom-stream-component.js'
 
 /** @jsx pragma */
-// const pragma = React.createElement
-const pragma = (node, attr, ...children) =>
-  h(node, attr || {}, children)
 
 function ReactComponent () {
   const [option, setOption] = useState('option2')
@@ -71,7 +67,7 @@ function Combobox (sources) {
     <div>
       <div>Color:</div>
       <select sel={select} defaultValue={comboValue$}>
-        <option value='#1e87f0'>auto</option>
+        <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>puple</option>
       </select>
@@ -101,9 +97,13 @@ function Card (sources) {
 }
 
 function ShowState (sources) {
-  return {
-    react: sources.state.stream.map(state => <div>{state.comboValue}</div>)
-  }
+  return component(sources,
+    <div>{sources.state.stream.map(state => state.comboValue)}</div>
+  )
+
+  // return {
+  //   react: sources.state.stream.map(state => <div>{state.comboValue}</div>)
+  // }
 }
 
 function main (sources) {
@@ -111,41 +111,52 @@ function main (sources) {
 
   const reducer$ = xs.of(() => ({ comboValue: 'red' }))
 
+  const color$ = state$.map(state => state.comboValue)
+
   return component(sources,
     <div className='uk-padding-small'>
       <div className='uk-flex uk-margin'>
+
         <Card title='Cycle JS component'>
           <Combobox />
         </Card>
+
         <Card title='React Component'>
           <ReactComponentWrapper>
             <ReactComponent />
           </ReactComponentWrapper>
         </Card>
+
         <Card title='Timer'>
           <Timer />
         </Card>
+
         <Card title='Counter'>
           <Counter />
         </Card>
+
         <Card title='Another counter'>
           <Counter />
         </Card>
+
       </div>
       <div className='uk-flex'>
+
         <Card title='Get state in nested component'>
           <ShowState />
         </Card>
+
         <Card title='Stream text node'>
           Combobox value:&nbsp;
           {state$.map(state => state.comboValue)}
         </Card>
-        <Card title={state$.map(state => `Stream travelling through prop: ${state.comboValue}`)} />
-        <Card title='Stream DOM prop' style={{ background: state$.map(state => state.comboValue) }}>
-          {'style={{ background: \''}
-          {state$.map(state => state.comboValue)}
-          {'\' }}'}
+
+        <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
+
+        <Card title='Stream DOM prop' style={{ background: color$ }}>
+          &lt;... style={'{{'} background: color$ {}}}...&gt;
         </Card>
+
       </div>
     </div>,
     {

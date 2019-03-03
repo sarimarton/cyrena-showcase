@@ -1,4 +1,5 @@
 import xs from 'xstream'
+import { h } from '@cycle/react'
 
 import cloneDeepWith from 'lodash/cloneDeepWith'
 import zip from 'lodash/zip'
@@ -9,27 +10,22 @@ import compact from 'lodash/compact'
 import pick from 'lodash/pick'
 import omit from 'lodash/omit'
 import set from 'lodash/set'
+import defaultTo from 'lodash/defaultTo'
+
+const VDOM_ELEMENT_FLAG = '__element'
+
+const cyclePragma = h
+
+export const pragma = (node, attr, ...children) =>
+  ({ ...cyclePragma(node, { ...attr }, children), [VDOM_ELEMENT_FLAG]: true })
 
 const isComponentNode = node =>
   node && typeof node.type === 'function'
 
-const streamConstructor =
-  Object.getPrototypeOf(xs.of()).constructor
-
-const isStream = val =>
-  val instanceof streamConstructor
-
-const cloneDeep = obj =>
-  cloneDeepWith(obj, value =>
-    isStream(value)
-      ? value
-      : undefined
-  )
-
 const traverse = (action, obj, path = [], acc = []) => {
-  var [_acc, goDeeper] = action(acc, obj, path)
+  let [_acc, stop] = action(acc, obj, path)
 
-  if (goDeeper && typeof obj === 'object') {
+  if (!stop && typeof obj === 'object') {
     for (let k in obj) {
       _acc = traverse(action, obj[k], [...path, k], _acc)
     }
@@ -38,24 +34,27 @@ const traverse = (action, obj, path = [], acc = []) => {
   return _acc
 }
 
-const getTraverseAction = (sources, extraTraverseAction) => (acc, val, path) => {
+const getTraverseAction = (sources, isStream) => (acc, val, path) => {
   const _isStream = isStream(val)
-  const _isCmp = isComponentNode(val)
+  const isCmp = isComponentNode(val)
 
-  extraTraverseAction(val, path)
+  // Add key props to prevent React warnings
+  if (val && val[VDOM_ELEMENT_FLAG]) {
+    val.key = defaultTo(val.key, path[path.length - 1])
+  }
 
-  if (_isStream || _isCmp) {
+  if (_isStream || isCmp) {
     acc.push({
       val,
       path,
-      isCmp: _isCmp,
-      ..._isCmp && {
+      isCmp,
+      ...isCmp && {
         sinks: val.type({ ...sources, ...pick(val, ['key', 'props']) })
       }
     })
   }
 
-  return [acc, !_isStream && !_isCmp]
+  return [acc, _isStream || isCmp]
 }
 
 const getAllSinksMergedOtherThanVdom = (vdomProp, mergeFn, sinks) =>
@@ -71,15 +70,17 @@ const getAllSinksMergedOtherThanVdom = (vdomProp, mergeFn, sinks) =>
   )
 
 export const component = (sources, vdom, config) => {
-  // Wrap the whole tree in an additional root node to
+  const cloneDeep = obj => cloneDeepWith(obj,
+    value => config.isStreamFn(value) ? value : undefined
+  )
+
+  // This one-time clone is needed to be able to
+  // amend the read-only react vdom with auto generated keys
   const root = cloneDeep(vdom)
 
   const vdomProp = config.vdomProp
 
-  const traverseAction = getTraverseAction(
-    sources,
-    config.extraTraverseAction || (() => {})
-  )
+  const traverseAction = getTraverseAction(sources, config.isStreamFn)
 
   const streamInfoRecords = traverse(traverseAction, root)
 
@@ -90,31 +91,29 @@ export const component = (sources, vdom, config) => {
       : node.val
   )
 
-  // Combine the vdom and stream node streams
-  // and map them placed into the original structure
-  // We should probably break these lists out into separate combine
-  // calls, but my attempt failed... this is such a fragile business here
-  let vdom$ = xs.combine(...signalStreams)
+  // Combine the vdom and stream node streams,
+  // and set them map them placed into the original structure
+  const vdom$ = config.combineFn(signalStreams)
     .map(signalValues => {
+      // It's needed to make react detect changes
       const _root = cloneDeep(root)
 
       zip(signalValues, streamInfoRecords).forEach(([val, info]) => {
         set(
           _root,
           info.path,
-          info.isCmp ? { ...val, key: val.key || info.val.key } : val
+          info.isCmp ? { ...val, key: defaultTo(val.key, info.val.key) } : val
         )
       })
 
       return _root
     })
 
-  // Gather all the other sinks which are not the vdom and merge them together
-  // by type
+  // Gather all other sinks which are not the vdom and merge them together by type
   const allOtherSinksOfAllComponents =
     getAllSinksMergedOtherThanVdom(
       vdomProp,
-      sinks => xs.merge(...sinks),
+      config.mergeFn,
       [
         config.otherSinks || {},
         ...streamInfoRecords.filter(info => info.isCmp).map(info => info.sinks)
@@ -129,16 +128,10 @@ export const component = (sources, vdom, config) => {
 
 export const cycleReactComponent = (sources, vdom, otherSinks) => {
   const _config = {
-    // The name of the vdom sink
     vdomProp: 'react',
-
-    // Prevent React warnings about lacking 'key' prop
-    extraTraverseAction: (node, path) => {
-      if (node && node.$$typeof === Symbol.for('react.element')) {
-        node.key = node.key || path[path.length - 1]
-      }
-    },
-
+    combineFn: streams => xs.combine(...streams),
+    mergeFn: streams => xs.merge(...streams),
+    isStreamFn: val => val instanceof Object.getPrototypeOf(xs.of()).constructor,
     otherSinks
   }
 
