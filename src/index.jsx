@@ -5,28 +5,35 @@ import { makeHTTPDriver } from '@cycle/http'
 import { withState } from '@cycle/state'
 import { useState } from 'react'
 
-import { pragma, cycleReactComponent as component } from './vdom-stream-component.js'
-
+import { pragma, component, ReactComponentWrapper } from './powercycle/react/component.js'
 /** @jsx pragma */
 
 function ReactComponent () {
-  const [option, setOption] = useState('option2')
+  const [count, setCount] = useState(0)
 
   return (
     <div>
-      <select value={option} onChange={e => { setOption(e.target.value) }}>
-        <option>option1</option>
-        <option>option2</option>
-      </select>
-      <div>state.comboValue: {option}</div>
+      <div>Counter: {count}</div>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
     </div>
   )
 }
 
-function ReactComponentWrapper (sources) {
-  return {
-    react: xs.of(sources.props.children)
-  }
+function ReactComponentWithCycleState () {
+  const [option, setOption] = useState('option2')
+
+  return (
+    <div>
+      <div>Color:</div>
+      <select value={option} onChange={e => { setOption(e.target.value) }}>
+        <option value='#1e87f0'>default</option>
+        <option value='red'>red</option>
+        <option value='purple'>puple</option>
+        <option value='green'>green</option>
+      </select>
+      <div>state.comboValue: {'comboValue$'}</div>
+    </div>
+  )
 }
 
 function Timer () {
@@ -37,7 +44,7 @@ function Timer () {
 }
 
 function Counter (sources) {
-  const inc = Symbol()
+  const inc = Symbol('inc')
   const inc$ = sources.react.select(inc).events('click')
 
   const count$ = inc$.fold(count => count + 1, 0)
@@ -51,7 +58,7 @@ function Counter (sources) {
 }
 
 function Combobox (sources) {
-  const select = Symbol()
+  const select = Symbol('select')
   const state$ = sources.state.stream
 
   const reducer$ =
@@ -70,6 +77,7 @@ function Combobox (sources) {
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>puple</option>
+        <option value='green'>green</option>
       </select>
       <div>state.comboValue: {comboValue$}</div>
     </div>,
@@ -100,10 +108,6 @@ function ShowState (sources) {
   return component(sources,
     <div>{sources.state.stream.map(state => state.comboValue)}</div>
   )
-
-  // return {
-  //   react: sources.state.stream.map(state => <div>{state.comboValue}</div>)
-  // }
 }
 
 function main (sources) {
@@ -121,9 +125,15 @@ function main (sources) {
           <Combobox />
         </Card>
 
-        <Card title='React Component'>
+        <Card title='React component'>
           <ReactComponentWrapper>
             <ReactComponent />
+          </ReactComponentWrapper>
+        </Card>
+
+        <Card title='React cmp w/ Cycle state'>
+          <ReactComponentWrapper>
+            <ReactComponentWithCycleState />
           </ReactComponentWrapper>
         </Card>
 
@@ -135,12 +145,12 @@ function main (sources) {
           <Counter />
         </Card>
 
+      </div>
+      <div className='uk-flex'>
+
         <Card title='Another counter'>
           <Counter />
         </Card>
-
-      </div>
-      <div className='uk-flex'>
 
         <Card title='Get state in nested component'>
           <ShowState />

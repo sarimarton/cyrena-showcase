@@ -1,6 +1,3 @@
-import xs from 'xstream'
-import { h } from '@cycle/react'
-
 import cloneDeepWith from 'lodash/cloneDeepWith'
 import zip from 'lodash/zip'
 import mapValues from 'lodash/fp/mapValues'
@@ -12,12 +9,10 @@ import omit from 'lodash/omit'
 import set from 'lodash/set'
 import defaultTo from 'lodash/defaultTo'
 
-const VDOM_ELEMENT_FLAG = '__element'
+const VDOM_ELEMENT_FLAG = Symbol('element')
 
-const cyclePragma = h
-
-export const pragma = (node, attr, ...children) =>
-  ({ ...cyclePragma(node, { ...attr }, children), [VDOM_ELEMENT_FLAG]: true })
+export const makePragma = pragma => (node, attr, ...children) =>
+  ({ ...pragma(node, { ...attr }, children), [VDOM_ELEMENT_FLAG]: true })
 
 const isComponentNode = node =>
   node && typeof node.type === 'function'
@@ -34,7 +29,7 @@ const traverse = (action, obj, path = [], acc = []) => {
   return _acc
 }
 
-const getTraverseAction = (sources, isStream) => (acc, val, path) => {
+const makeTraverseAction = (sources, isStream) => (acc, val, path) => {
   const _isStream = isStream(val)
   const isCmp = isComponentNode(val)
 
@@ -57,18 +52,6 @@ const getTraverseAction = (sources, isStream) => (acc, val, path) => {
   return [acc, _isStream || isCmp]
 }
 
-const getAllSinksMergedOtherThanVdom = (vdomProp, mergeFn, sinks) =>
-  mapValues(sinks => mergeFn(sinks))(
-    sinks.reduce(
-      (acc, next) => mergeWith(
-        acc,
-        omit(next, vdomProp),
-        (addition, src) => compact([...castArray(addition), src])
-      ),
-      {}
-    )
-  )
-
 export const component = (sources, vdom, config) => {
   const cloneDeep = obj => cloneDeepWith(obj,
     value => config.isStreamFn(value) ? value : undefined
@@ -78,21 +61,20 @@ export const component = (sources, vdom, config) => {
   // amend the read-only react vdom with auto generated keys
   const root = cloneDeep(vdom)
 
-  const vdomProp = config.vdomProp
-
-  const traverseAction = getTraverseAction(sources, config.isStreamFn)
-
-  const streamInfoRecords = traverse(traverseAction, root)
+  const streamInfoRecords = traverse(
+    makeTraverseAction(sources, config.isStreamFn),
+    root
+  )
 
   // Get the signal streams (the ones which need to be combined)
   const signalStreams = streamInfoRecords.map(node =>
     node.isCmp
-      ? node.sinks[vdomProp]
+      ? node.sinks[config.vdomProp]
       : node.val
   )
 
   // Combine the vdom and stream node streams,
-  // and set them map them placed into the original structure
+  // and place their values into the original structure
   const vdom$ = config.combineFn(signalStreams)
     .map(signalValues => {
       // It's needed to make react detect changes
@@ -109,31 +91,25 @@ export const component = (sources, vdom, config) => {
       return _root
     })
 
-  // Gather all other sinks which are not the vdom and merge them together by type
+  // Gather all other sinks and merge them together by type
   const allOtherSinksOfAllComponents =
-    getAllSinksMergedOtherThanVdom(
-      vdomProp,
-      config.mergeFn,
-      [
-        config.otherSinks || {},
-        ...streamInfoRecords.filter(info => info.isCmp).map(info => info.sinks)
-      ]
-    )
+    [streamInfoRecords]
+      .map(xs => xs.filter(info => info.isCmp))
+      .map(xs => xs.map(info => info.sinks))
+      .map(xs => [config.otherSinks || {}, ...xs])
+      .map(xs => xs.reduce(
+        (acc, next) => mergeWith(
+          acc,
+          omit(next, config.vdomProp),
+          (addition, src) => compact([...castArray(addition), src])
+        ),
+        {}
+      ))
+      .map(mapValues(sinks => config.mergeFn(sinks)))
+      [0]
 
   return {
-    [vdomProp]: vdom$,
+    [config.vdomProp]: vdom$,
     ...allOtherSinksOfAllComponents
   }
-}
-
-export const cycleReactComponent = (sources, vdom, otherSinks) => {
-  const _config = {
-    vdomProp: 'react',
-    combineFn: streams => xs.combine(...streams),
-    mergeFn: streams => xs.merge(...streams),
-    isStreamFn: val => val instanceof Object.getPrototypeOf(xs.of()).constructor,
-    otherSinks
-  }
-
-  return component(sources, vdom, _config)
 }
