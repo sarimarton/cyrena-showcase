@@ -51,6 +51,7 @@ const getTraverseAction =
       if (isComponent) {
         cmpList.push({
           path: path.map(n => n.idx),
+          key: node.key,
           // Invoke cycle components in the vdom, and get the sinks
           // Also pass key and props to them
           sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) })
@@ -131,10 +132,7 @@ export const component = (sources, vdom, config) => {
       const streamNodeValues = vdomsAndStreamNodeValues.slice(cmps.length)
 
       zip(vdoms, cmps).forEach(([vdom, cmp]) => {
-        if (vdom.key == undefined) {
-          debugger
-        }
-        replaceNode(_root, cmp.path, { ...vdom, key: vdom.key })
+        replaceNode(_root, cmp.path, { ...vdom, key: vdom.key || cmp.key })
       })
 
       zip(streamNodeValues, streamNodes).forEach(([streamNodeValue, streamNode]) => {
