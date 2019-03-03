@@ -72,9 +72,7 @@ const getAllSinksMergedOtherThanVdom = (vdomProp, mergeFn, sinks) =>
 
 export const component = (sources, vdom, config) => {
   // Wrap the whole tree in an additional root node to
-  const root = ({
-    props: { children: [cloneDeep(vdom)] }
-  })
+  const root = cloneDeep(vdom)
 
   const vdomProp = config.vdomProp
 
@@ -108,7 +106,7 @@ export const component = (sources, vdom, config) => {
         )
       })
 
-      return _root.props.children[0]
+      return _root
     })
 
   // Gather all the other sinks which are not the vdom and merge them together
@@ -136,10 +134,7 @@ export const cycleReactComponent = (sources, vdom, otherSinks) => {
 
     // Prevent React warnings about lacking 'key' prop
     extraTraverseAction: (node, path) => {
-      // It's a little ugly, will work it out
-      const isRoot = path.join('.') === 'props.children.0'
-
-      if (!isRoot && node && node.$$typeof === Symbol.for('react.element')) {
+      if (node && node.$$typeof === Symbol.for('react.element')) {
         node.key = node.key || path[path.length - 1]
       }
     },
