@@ -27,6 +27,12 @@ function ReactComponent () {
   )
 }
 
+function ReactComponentWrapper (sources) {
+  return {
+    react: xs.of(sources.props.children)
+  }
+}
+
 function Timer () {
   return {
     react: xs.periodic(1000).startWith(-1)
@@ -59,49 +65,26 @@ function Combobox (sources) {
       .map(event => event.target.value)
       .map(value => state => ({ ...state, comboValue: value }))
 
-  // return component(sources,
-  //   <div>
-  //     <div>Color:</div>
-  //     <select sel={select}>
-  //       <option value='auto'>auto</option>
-  //       <option value='red'>red</option>
-  //     </select>
-  //     <div>state.comboValue: {state$.map(s => s.comboValue)}</div>
-  //   </div>,
-  //   {
-  //     state: reducer$,
-  //     HTTP: xs.of({
-  //       url: '?example-http-request',
-  //       category: 'search'
-  //     })
-  //   }
-  // )
+  const comboValue$ = state$.map(s => s.comboValue)
 
-  return {
-    react: state$.map(state => {
-      return (
-        <div>
-          <div>Color:</div>
-          <select sel={select} defaultValue={state.comboValue}>
-            <option value='auto'>auto</option>
-            <option value='red'>red</option>
-          </select>
-          <div>state.comboValue: {state.comboValue}</div>
-        </div>
-      )
-    }),
-    state: reducer$,
-    HTTP: xs.of({
-      url: '?example-http-request',
-      category: 'search'
-    })
-  }
-}
-
-function ReactComponentWrapper (sources) {
-  return {
-    react: xs.of(sources.props.children)
-  }
+  return component(sources,
+    <div>
+      <div>Color:</div>
+      <select sel={select} defaultValue={comboValue$}>
+        <option value='#1e87f0'>auto</option>
+        <option value='red'>red</option>
+        <option value='purple'>puple</option>
+      </select>
+      <div>state.comboValue: {comboValue$}</div>
+    </div>,
+    {
+      state: reducer$,
+      HTTP: xs.of({
+        url: '?example-http-request',
+        category: 'search'
+      })
+    }
+  )
 }
 
 function Card (sources) {

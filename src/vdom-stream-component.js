@@ -29,7 +29,7 @@ const cloneDeep = obj =>
 const traverse = (action, obj, path = [], acc = []) => {
   var [_acc, goDeeper] = action(acc, obj, path)
 
-  if (typeof obj === 'object' && goDeeper) {
+  if (goDeeper && typeof obj === 'object') {
     for (let k in obj) {
       _acc = traverse(action, obj[k], [...path, k], _acc)
     }
@@ -81,10 +81,10 @@ export const component = (sources, vdom, config) => {
     config.extraTraverseAction || (() => {})
   )
 
-  const streamNodes = traverse(traverseAction, root)
+  const streamInfoRecords = traverse(traverseAction, root)
 
   // Get the signal streams (the ones which need to be combined)
-  const signalStreams = streamNodes.map(node =>
+  const signalStreams = streamInfoRecords.map(node =>
     node.isCmp
       ? node.sinks[vdomProp]
       : node.val
@@ -98,7 +98,7 @@ export const component = (sources, vdom, config) => {
     .map(signalValues => {
       const _root = cloneDeep(root)
 
-      zip(signalValues, streamNodes).forEach(([val, info]) => {
+      zip(signalValues, streamInfoRecords).forEach(([val, info]) => {
         set(
           _root,
           info.path,
@@ -117,7 +117,7 @@ export const component = (sources, vdom, config) => {
       sinks => xs.merge(...sinks),
       [
         config.otherSinks || {},
-        ...streamNodes.filter(info => info.isCmp).map(info => info.sinks)
+        ...streamInfoRecords.filter(info => info.isCmp).map(info => info.sinks)
       ]
     )
 
