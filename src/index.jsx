@@ -108,7 +108,7 @@ function Card (sources) {
   return component(sources,
     <div
       className='uk-margin-right uk-width-1-6 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'
-      {...sources.props}
+      style={sources.props.style}
     >
       {sources.props.title &&
         <h3 className='uk-card-title'>{sources.props.title}</h3>}
@@ -158,10 +158,10 @@ function main (sources) {
           {state$.map(state => state.comboValue)}
         </Card>
         <Card title={state$.map(state => `Stream travelling through prop: ${state.comboValue}`)} />
-        <Card title='Stream DOM prop!' style={{background: state$.map(state => state.comboValue)}}>
-          {'{ style: { background: \''}
+        <Card title='Stream DOM prop' style={{ background: state$.map(state => state.comboValue) }}>
+          {'style={{ background: \''}
           {state$.map(state => state.comboValue)}
-          {' \'}}'}
+          {'\' }}'}
         </Card>
       </div>
     </div>,

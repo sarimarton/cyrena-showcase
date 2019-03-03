@@ -8,83 +8,54 @@ import mergeWith from 'lodash/mergeWith'
 import compact from 'lodash/compact'
 import pick from 'lodash/pick'
 import omit from 'lodash/omit'
+import set from 'lodash/set'
 
 const isComponentNode = node =>
-  typeof node.type === 'function'
+  node && typeof node.type === 'function'
 
 const streamConstructor =
   Object.getPrototypeOf(xs.of()).constructor
 
-const isStreamNode = node =>
-  node instanceof streamConstructor
+const isStream = val =>
+  val instanceof streamConstructor
 
 const cloneDeep = obj =>
   cloneDeepWith(obj, value =>
-    isStreamNode(value)
+    isStream(value)
       ? value
       : undefined
   )
 
-const traverseVdom = traverseAction => (node, path = [], cmpList = [], streamNodeList = []) => {
-  if (traverseAction(node, path, cmpList, streamNodeList)) {
-    const children = Array.isArray(node)
-      ? node
-      : castArray(node.props && node.props.children)
+const traverse = (action, obj, path = [], acc = []) => {
+  var [_acc, goDeeper] = action(acc, obj, path)
 
-    children.forEach((n, idx) => {
-      if (n) {
-        traverseVdom(traverseAction)(n, [...path, { node, idx }], cmpList, streamNodeList)
+  if (typeof obj === 'object' && goDeeper) {
+    for (let k in obj) {
+      _acc = traverse(action, obj[k], [...path, k], _acc)
+    }
+  }
+
+  return _acc
+}
+
+const getTraverseAction = (sources, extraTraverseAction) => (acc, val, path) => {
+  const _isStream = isStream(val)
+  const _isCmp = isComponentNode(val)
+
+  extraTraverseAction(val, path)
+
+  if (_isStream || _isCmp) {
+    acc.push({
+      val,
+      path,
+      isCmp: _isCmp,
+      ..._isCmp && {
+        sinks: val.type({ ...sources, ...pick(val, ['key', 'props']) })
       }
     })
   }
 
-  return [cmpList, streamNodeList]
-}
-
-const getTraverseAction =
-  (sources, additionalTraverseAction) =>
-    (node, path, cmpList, streamNodeList) => {
-      const isComponent = isComponentNode(node)
-
-      additionalTraverseAction(node, path)
-
-      if (isComponent) {
-        cmpList.push({
-          path: path.map(n => n.idx),
-          key: node.key,
-          // Invoke cycle components in the vdom, and get the sinks
-          // Also pass key and props to them
-          sinks: node.type({ ...sources, ...pick(node, ['key', 'props']) })
-        })
-      }
-
-      if (isStreamNode(node)) {
-        streamNodeList.push({
-          path: path.map(n => n.idx),
-          stream: node
-        })
-      }
-
-      return !isComponent
-    }
-
-const replaceNode = (root, path, value) => {
-  let node = root
-  let i
-
-  for (i = 0; i < path.length - 1; i++) {
-    node = Array.isArray(node)
-      ? node
-      : castArray(node.props.children)[path[i]]
-  }
-
-  if (Array.isArray(node)) {
-    node[path[i]] = value
-  } else if (Array.isArray(node.props.children)) {
-    node.props.children[path[i]] = value
-  } else {
-    node.props.children = value
-  }
+  return [acc, !_isStream && !_isCmp]
 }
 
 const getAllSinksMergedOtherThanVdom = (vdomProp, mergeFn, sinks) =>
@@ -109,34 +80,32 @@ export const component = (sources, vdom, config) => {
 
   const traverseAction = getTraverseAction(
     sources,
-    config.additionalTraverseAction || (() => {})
+    config.extraTraverseAction || (() => {})
   )
 
-  const [cmps, streamNodes] = traverseVdom(traverseAction)(root)
+  const streamNodes = traverse(traverseAction, root)
 
-  // Get the vdoms from among the sinks
-  const vdoms = cmps.map(cmp => cmp.sinks[vdomProp])
-
-  // Get the stream node values
-  const streamNodeValues = streamNodes.map(n => n.stream)
+  // Get the signal streams (the ones which need to be combined)
+  const signalStreams = streamNodes.map(node =>
+    node.isCmp
+      ? node.sinks[vdomProp]
+      : node.val
+  )
 
   // Combine the vdom and stream node streams
   // and map them placed into the original structure
   // We should probably break these lists out into separate combine
   // calls, but my attempt failed... this is such a fragile business here
-  let vdom$ = xs.combine(...vdoms, ...streamNodeValues)
-    .map(vdomsAndStreamNodeValues => {
+  let vdom$ = xs.combine(...signalStreams)
+    .map(signalValues => {
       const _root = cloneDeep(root)
 
-      const vdoms = vdomsAndStreamNodeValues.slice(0, cmps.length)
-      const streamNodeValues = vdomsAndStreamNodeValues.slice(cmps.length)
-
-      zip(vdoms, cmps).forEach(([vdom, cmp]) => {
-        replaceNode(_root, cmp.path, { ...vdom, key: vdom.key || cmp.key })
-      })
-
-      zip(streamNodeValues, streamNodes).forEach(([streamNodeValue, streamNode]) => {
-        replaceNode(_root, streamNode.path, streamNodeValue)
+      zip(signalValues, streamNodes).forEach(([val, info]) => {
+        set(
+          _root,
+          info.path,
+          info.isCmp ? { ...val, key: val.key || info.val.key } : val
+        )
       })
 
       return _root.props.children[0]
@@ -148,7 +117,10 @@ export const component = (sources, vdom, config) => {
     getAllSinksMergedOtherThanVdom(
       vdomProp,
       sinks => xs.merge(...sinks),
-      [config.otherSinks || {}, ...cmps.map(cmp => cmp.sinks)]
+      [
+        config.otherSinks || {},
+        ...streamNodes.filter(info => info.isCmp).map(info => info.sinks)
+      ]
     )
 
   return {
@@ -163,9 +135,12 @@ export const cycleReactComponent = (sources, vdom, otherSinks) => {
     vdomProp: 'react',
 
     // Prevent React warnings about lacking 'key' prop
-    additionalTraverseAction: (node, path) => {
-      if (node.$$typeof === Symbol.for('react.element')) {
-        node.key = node.key || path[path.length - 1].idx
+    extraTraverseAction: (node, path) => {
+      // It's a little ugly, will work it out
+      const isRoot = path.join('.') === 'props.children.0'
+
+      if (!isRoot && node && node.$$typeof === Symbol.for('react.element')) {
+        node.key = node.key || path[path.length - 1]
       }
     },
 
