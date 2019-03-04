@@ -244,7 +244,7 @@ function main (sources) {
           </Card>
         </StateLens>
 
-        <Card title='React component w/ Lenses'>
+        <Card title='React cmp w/ Lenses'>
           <ReactDomain lens='comboValue'>
             <ReactComponentWithCycleStateAndLens />
           </ReactDomain>
