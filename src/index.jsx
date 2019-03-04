@@ -110,6 +110,14 @@ function ShowState (sources) {
   )
 }
 
+function Code (sources) {
+  return component(sources,
+    <span className='uk-text-small' style={{ fontSize: 12, fontFamily: 'consolas, monospace' }}>
+      {sources.props.children}
+    </span>
+  )
+}
+
 function main (sources) {
   const state$ = sources.state.stream
 
@@ -160,15 +168,19 @@ function main (sources) {
 
         <Card title='Stream text node'>
           Combobox value:&nbsp;
-          {state$.map(state => state.comboValue)}
+          {color$}
           <br />
-          {'{state$.map(state => state.comboValue)}'}
+          <Code>
+            {'<div>{color$}</div>'}
+          </Code>
         </Card>
 
         <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
 
         <Card title='Stream DOM prop' style={{ background: color$ }}>
-          &lt;div style={'{{'} background: color$ {}}}&gt;
+          <Code>
+            &lt;div style={'{{'} background: color$ {}}}&gt;
+          </Code>
         </Card>
 
       </div>

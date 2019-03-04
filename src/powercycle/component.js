@@ -8,6 +8,7 @@ import pick from 'lodash/pick'
 import omit from 'lodash/omit'
 import set from 'lodash/set'
 import defaultTo from 'lodash/defaultTo'
+import isObject from 'lodash/isObject'
 
 const VDOM_ELEMENT_FLAG = Symbol('powercycle.element')
 
@@ -16,10 +17,10 @@ export const makePragma = pragma => (node, attr, ...children) =>
     ...pragma(
       node,
       { ...attr },
-      children.map((c, i) => {
-        if (typeof c === 'object' && c && !c.key) c.key = i
-        return c
-      })
+      // Enforce key presence to suppress warnings coming from react pragma.
+      // Not sure if it's a good idea, since in ReactDomains, the warning is
+      // obviously legit...
+      children.map((c, key) => isObject(c) ? Object.assign(c, { key }) : c)
     ),
     [VDOM_ELEMENT_FLAG]: true
   })
