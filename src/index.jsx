@@ -5,7 +5,14 @@ import { makeHTTPDriver } from '@cycle/http'
 import { withState } from '@cycle/state'
 import { Fragment, useState } from 'react'
 
-import { pragma, component, ReactDomain, useCycleState } from './powercycle/react/component.js'
+import {
+  pragma,
+  component,
+  ReactDomain,
+  StateLens,
+  useCycleState
+} from './powercycle/react/component.js'
+
 /** @jsx pragma */
 /** @jsxFrag Fragment */
 
@@ -32,10 +39,28 @@ function ReactComponentWithCycleState (props) {
         <option value='purple'>puple</option>
         <option value='green'>green</option>
       </select>
-      <div>state.comboValue: {state.comboValue}</div>
+      <div>state: {JSON.stringify(state)}</div>
     </>
   )
 }
+
+function ReactComponentWithCycleStateAndLens (props) {
+  const [state, setState] = useCycleState(props.sources)
+
+  return (
+    <>
+      <div>Color:</div>
+      <select value={state} onChange={e => { setState(e.target.value) }}>
+        <option value='#1e87f0'>default</option>
+        <option value='red'>red</option>
+        <option value='purple'>puple</option>
+        <option value='green'>green</option>
+      </select>
+      <div>state: {JSON.stringify(state)}</div>
+    </>
+  )
+}
+
 
 function Timer () {
   return component(null,
@@ -66,7 +91,7 @@ function Combobox (sources) {
       .select(select)
       .events('change')
       .map(event => event.target.value)
-      .map(value => state => ({ ...state, comboValue: value }))
+      .map(value => prevState => ({ ...prevState, comboValue: value }))
 
   const comboValue$ = state$.map(s => s.comboValue)
 
@@ -79,7 +104,7 @@ function Combobox (sources) {
         <option value='purple'>puple</option>
         <option value='green'>green</option>
       </select>
-      <div>state.comboValue: {comboValue$}</div>
+      <div>state: {'{'} comboValue: {comboValue$} {'}'}</div>
     </>,
     {
       state: reducer$,
@@ -91,11 +116,39 @@ function Combobox (sources) {
   )
 }
 
+function ComboboxWithLens (sources) {
+  const select = Symbol('select')
+  const state$ = sources.state.stream
+
+  const reducer$ =
+    sources.react
+      .select(select)
+      .events('change')
+      .map(event => event.target.value)
+      .map(value => prevState => value)
+
+  return component(sources,
+    <>
+      <div>Color:</div>
+      <select sel={select} defaultValue={state$}>
+        <option value='#1e87f0'>default</option>
+        <option value='red'>red</option>
+        <option value='purple'>puple</option>
+        <option value='green'>green</option>
+      </select>
+      <div>state: "{state$}"</div>
+    </>,
+    {
+      state: reducer$
+    }
+  )
+}
+
 function Card (sources) {
   return component(sources,
     <div
-      className='uk-margin-right uk-width-1-5 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'
-      style={sources.props.style}
+      className='uk-margin-right uk-width-1-4 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'
+      style={{ ...sources.props.style, minWidth: 180, maxWidth: 300 }}
     >
       {sources.props.title &&
         <h3 className='uk-card-title'>{sources.props.title}</h3>}
@@ -106,7 +159,7 @@ function Card (sources) {
 
 function ShowState (sources) {
   return component(sources,
-    <div>state.comboValue: {sources.state.stream.map(state => state.comboValue)}</div>
+    <Code>state: {sources.state.stream.map(state => JSON.stringify(state))}</Code>
   )
 }
 
@@ -184,6 +237,18 @@ function main (sources) {
           <Code>
             &lt;div style={'{{'} background: color$ {}}}&gt;
           </Code>
+        </Card>
+
+        <StateLens lens='comboValue'>
+          <Card title='Lenses'>
+            <ComboboxWithLens />
+          </Card>
+        </StateLens>
+
+        <Card title='React component w/ Lenses'>
+          <ReactDomain lens='comboValue'>
+            <ReactComponentWithCycleStateAndLens />
+          </ReactDomain>
         </Card>
       </div>
 

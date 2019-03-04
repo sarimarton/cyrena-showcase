@@ -16,6 +16,11 @@ const CONFIG = {
 }
 
 export function ReactDomain (sources) {
+  const reducer$ = xs.create({
+    start: function () {},
+    stop: function () {}
+  })
+
   return {
     react: xs.of(
       createElement(
@@ -28,12 +33,13 @@ export function ReactDomain (sources) {
               ? {
                 ...cmp,
                 key: cmp.key != null ? cmp.key : idx,
-                props: { ...cmp.props, sources }
+                props: { ...cmp.props, sources: { ...sources, reducer$ } }
               }
               : cmp
           )
       )
-    )
+    ),
+    state: reducer$
   }
 }
 
@@ -49,10 +55,18 @@ export function useCycleState (sources) {
   return [
     state,
     state => {
-      sources.state.stream.shamefullySendNext(state)
+      sources.reducer$.shamefullySendNext(() => state)
     }
   ]
 }
 
-export const component = (sources, vdom, otherSinks) =>
-  powerCycleComponent(sources, vdom, { ...CONFIG, otherSinks })
+export function StateLens (sources) {
+  return component(
+    sources,
+    createElement(Fragment, null, sources.props.children),
+    {}
+  )
+}
+
+export const component = (sources, vdom, otherSinks, config) =>
+  powerCycleComponent(sources, vdom, { ...CONFIG, otherSinks, ...config })

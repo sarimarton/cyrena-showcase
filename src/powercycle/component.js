@@ -9,6 +9,7 @@ import omit from 'lodash/omit'
 import set from 'lodash/set'
 import defaultTo from 'lodash/defaultTo'
 import isObject from 'lodash/isObject'
+import isolate from '@cycle/isolate'
 
 const VDOM_ELEMENT_FLAG = Symbol('powercycle.element')
 
@@ -50,12 +51,16 @@ const makeTraverseAction = (sources, isStream) => (acc, val, path) => {
   }
 
   if (_isStream || isCmp) {
+    const lens = isCmp && val.props.lens
+    const cmp = isCmp &&
+      (lens ? isolate(val.type, lens) : val.type)
+
     acc.push({
       val,
       path,
       isCmp,
       ...isCmp && {
-        sinks: val.type({ ...sources, ...pick(val, ['key', 'props']) })
+        sinks: cmp({ ...sources, ...pick(val, ['key', 'props']) })
       }
     })
   }
