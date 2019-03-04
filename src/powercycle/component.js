@@ -9,10 +9,20 @@ import omit from 'lodash/omit'
 import set from 'lodash/set'
 import defaultTo from 'lodash/defaultTo'
 
-const VDOM_ELEMENT_FLAG = Symbol('element')
+const VDOM_ELEMENT_FLAG = Symbol('powercycle.element')
 
 export const makePragma = pragma => (node, attr, ...children) =>
-  ({ ...pragma(node, { ...attr }, children), [VDOM_ELEMENT_FLAG]: true })
+  ({
+    ...pragma(
+      node,
+      { ...attr },
+      children.map((c, i) => {
+        if (typeof c === 'object' && c && !c.key) c.key = i
+        return c
+      })
+    ),
+    [VDOM_ELEMENT_FLAG]: true
+  })
 
 const isComponentNode = node =>
   node && typeof node.type === 'function'
@@ -53,7 +63,8 @@ const makeTraverseAction = (sources, isStream) => (acc, val, path) => {
 }
 
 export const component = (sources, vdom, config) => {
-  const cloneDeep = obj => cloneDeepWith(obj,
+  const cloneDeep = obj => cloneDeepWith(
+    obj,
     value => config.isStreamFn(value) ? value : undefined
   )
 
@@ -84,7 +95,7 @@ export const component = (sources, vdom, config) => {
         set(
           _root,
           info.path,
-          info.isCmp ? { ...val, key: defaultTo(val.key, info.val.key) } : val
+          info.isCmp ? { ...val, key: defaultTo(info.val.key, val.key) } : val
         )
       })
 

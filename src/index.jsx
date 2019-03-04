@@ -3,7 +3,7 @@ import { run } from '@cycle/run'
 import { makeDOMDriver } from '@cycle/react-dom'
 import { makeHTTPDriver } from '@cycle/http'
 import { withState } from '@cycle/state'
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState } from 'react'
 
 import { pragma, component, ReactDomain, useCycleState } from './powercycle/react/component.js'
 /** @jsx pragma */
@@ -38,10 +38,9 @@ function ReactComponentWithCycleState (props) {
 }
 
 function Timer () {
-  return {
-    react: xs.periodic(1000).startWith(-1)
-      .map(counter => <div>{counter}</div>)
-  }
+  return component(null,
+    <div>{xs.periodic(1000).startWith(-1)}</div>
+  )
 }
 
 function Counter (sources) {
@@ -107,7 +106,7 @@ function Card (sources) {
 
 function ShowState (sources) {
   return component(sources,
-    <div>{sources.state.stream.map(state => state.comboValue)}</div>
+    <div>state.comboValue: {sources.state.stream.map(state => state.comboValue)}</div>
   )
 }
 
@@ -144,30 +143,32 @@ function main (sources) {
           <Timer />
         </Card>
 
-        <Card title='Counter'>
-          <Counter />
+        <Card title='Get state in nested component'>
+          <ShowState />
         </Card>
 
       </div>
       <div className='uk-flex'>
 
-        <Card title='Another counter'>
+        <Card title='Counter'>
           <Counter />
         </Card>
 
-        <Card title='Get state in nested component'>
-          <ShowState />
+        <Card title='Another counter'>
+          <Counter />
         </Card>
 
         <Card title='Stream text node'>
           Combobox value:&nbsp;
           {state$.map(state => state.comboValue)}
+          <br />
+          {'{state$.map(state => state.comboValue)}'}
         </Card>
 
         <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
 
         <Card title='Stream DOM prop' style={{ background: color$ }}>
-          &lt;... style={'{{'} background: color$ {}}}...&gt;
+          &lt;div style={'{{'} background: color$ {}}}&gt;
         </Card>
 
       </div>

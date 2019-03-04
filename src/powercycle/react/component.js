@@ -39,7 +39,7 @@ export function ReactDomain (sources) {
   }
 }
 
-export function useCycleState(sources) {
+export function useCycleState (sources) {
   const [state, setState] = useState(0)
 
   useEffect(() => {
