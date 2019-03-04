@@ -40,7 +40,7 @@ export function ReactDomain (sources) {
 }
 
 export function useCycleState(sources) {
-  const [state, setState] = useState({})
+  const [state, setState] = useState(0)
 
   useEffect(() => {
     sources.state.stream.subscribe({
