@@ -151,12 +151,12 @@ function main (sources) {
           <Timer />
         </Card>
 
+      </div>
+      <div className='uk-flex uk-margin'>
+
         <Card title='Get state in nested component'>
           <ShowState />
         </Card>
-
-      </div>
-      <div className='uk-flex'>
 
         <Card title='Counter'>
           <Counter />
@@ -175,6 +175,9 @@ function main (sources) {
           </Code>
         </Card>
 
+      </div>
+
+      <div className='uk-flex uk-margin'>
         <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
 
         <Card title='Stream DOM prop' style={{ background: color$ }}>
@@ -182,8 +185,8 @@ function main (sources) {
             &lt;div style={'{{'} background: color$ {}}}&gt;
           </Code>
         </Card>
-
       </div>
+
     </div>,
     {
       state: reducer$
