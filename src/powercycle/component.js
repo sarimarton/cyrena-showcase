@@ -71,7 +71,7 @@ export const component = (sources, vdom, config) => {
 
   // This one-time clone is needed to be able to
   // amend the read-only react vdom with auto generated keys
-  const root = cloneDeep(vdom)
+  const root = [cloneDeep(vdom)]
 
   const streamInfoRecords = traverse(
     makeTraverseAction(sources, config.isStreamFn),
@@ -100,7 +100,7 @@ export const component = (sources, vdom, config) => {
         )
       })
 
-      return _root
+      return _root[0]
     })
 
   // Gather all other sinks and merge them together by type
