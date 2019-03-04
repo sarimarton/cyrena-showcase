@@ -1,4 +1,4 @@
-import xs from 'xstream'
+import { default as xs, Stream, MemoryStream } from 'xstream'
 import { h } from '@cycle/react'
 import {
   makePragma,
@@ -8,13 +8,11 @@ import { createElement, Fragment, useState, useEffect } from 'react'
 
 export const pragma = makePragma(h)
 
-const streamConstructor = Object.getPrototypeOf(xs.of()).constructor
-
 const CONFIG = {
   vdomProp: 'react',
   combineFn: streams => xs.combine(...streams),
   mergeFn: streams => xs.merge(...streams),
-  isStreamFn: val => val instanceof streamConstructor
+  isStreamFn: val => val instanceof Stream || val instanceof MemoryStream
 }
 
 export function ReactDomain (sources) {
