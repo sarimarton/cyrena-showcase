@@ -94,7 +94,7 @@ function Combobox (sources) {
 function Card (sources) {
   return component(sources,
     <div
-      className='uk-margin-right uk-width-1-6 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'
+      className='uk-margin-right uk-width-1-5 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'
       style={sources.props.style}
     >
       {sources.props.title &&
