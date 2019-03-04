@@ -29,6 +29,9 @@ export const makePragma = pragma => (node, attr, ...children) =>
 const isComponentNode = node =>
   node && typeof node.type === 'function'
 
+const isElement = val =>
+  val && val[VDOM_ELEMENT_FLAG]
+
 const traverse = (action, obj, path = [], acc = []) => {
   let [_acc, stop] = action(acc, obj, path)
 
@@ -41,34 +44,46 @@ const traverse = (action, obj, path = [], acc = []) => {
   return _acc
 }
 
-const makeTraverseAction = (sources, isStream) => (acc, val, path) => {
-  const _isStream = isStream(val)
+const makeTraverseAction = config => (acc, val, path) => {
+  const isStream = config.isStreamFn(val)
   const isCmp = isComponentNode(val)
 
   // Add key props to prevent React warnings
-  if (val && val[VDOM_ELEMENT_FLAG]) {
+  if (isElement(val)) {
     val.key = defaultTo(val.key, path[path.length - 1])
   }
 
-  if (_isStream || isCmp) {
+  if (isStream || isCmp) {
     const lens = isCmp && val.props.lens
     const cmp = isCmp &&
       (lens ? isolate(val.type, lens) : val.type)
 
-    acc.push({
-      val,
-      path,
-      isCmp,
-      ...isCmp && {
-        sinks: cmp({ ...sources, ...pick(val, ['key', 'props']) })
-      }
-    })
+    const res = castArray(
+      isCmp && cmp({ ...config.sources, ...pick(val, ['key', 'props']) })
+    )
+
+    // Allows shortcut return value, like: return <div>...</div> or with sinks:
+    // return [<div>...</div>, { state: ... }]
+    // In the shortcut form, there's no need to pass the sources object, as it
+    // can be accessed from the config - an upper component. But there are
+    // two caveats:
+    // 1. The function will no longer be a standard cyclejs component
+    // 2. There's still at least one component() call must be at the top
+    const sinks = isElement(res[0])
+      ? component(res[0], {
+        ...config,
+        eventSinks: res[1],
+        sources: res[2] || config.sources
+      })
+      : res[0]
+
+    acc.push({ val, path, isCmp, ...isCmp && { sinks } })
   }
 
-  return [acc, _isStream || isCmp]
+  return [acc, isStream || isCmp]
 }
 
-export const component = (sources, vdom, config) => {
+export const component = (vdom, config) => {
   const cloneDeep = obj => cloneDeepWith(
     obj,
     value => config.isStreamFn(value) ? value : undefined
@@ -78,10 +93,7 @@ export const component = (sources, vdom, config) => {
   // amend the read-only react vdom with auto generated keys
   const root = [cloneDeep(vdom)]
 
-  const streamInfoRecords = traverse(
-    makeTraverseAction(sources, config.isStreamFn),
-    root
-  )
+  const streamInfoRecords = traverse(makeTraverseAction(config), root)
 
   // Get the signal streams (the ones which need to be combined)
   const signalStreams = streamInfoRecords.map(node =>
@@ -108,12 +120,12 @@ export const component = (sources, vdom, config) => {
       return _root[0]
     })
 
-  // Gather all other sinks and merge them together by type
-  const allOtherSinksOfAllComponents =
+  // Gather all event sinks (all but vdom) and merge them together by type
+  const eventSinks =
     [streamInfoRecords]
       .map(xs => xs.filter(info => info.isCmp))
       .map(xs => xs.map(info => info.sinks))
-      .map(xs => [config.otherSinks || {}, ...xs])
+      .map(xs => [config.eventSinks || {}, ...xs])
       .map(xs => xs.reduce(
         (acc, next) => mergeWith(
           acc,
@@ -127,6 +139,6 @@ export const component = (sources, vdom, config) => {
 
   return {
     [config.vdomProp]: vdom$,
-    ...allOtherSinksOfAllComponents
+    ...eventSinks
   }
 }

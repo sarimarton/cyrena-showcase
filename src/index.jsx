@@ -7,7 +7,7 @@ import { Fragment, useState } from 'react'
 
 import {
   pragma,
-  component,
+  withPower,
   ReactDomain,
   StateLens,
   useCycleState
@@ -61,9 +61,8 @@ function ReactComponentWithCycleStateAndLens (props) {
   )
 }
 
-
 function Timer () {
-  return component(null,
+  return (
     <div>{xs.periodic(1000).startWith(-1)}</div>
   )
 }
@@ -74,7 +73,7 @@ function Counter (sources) {
 
   const count$ = inc$.fold(count => count + 1, 0)
 
-  return component(sources,
+  return (
     <>
       <button sel={inc}>Incremenet</button>
       <div>{count$}</div>
@@ -95,7 +94,7 @@ function Combobox (sources) {
 
   const comboValue$ = state$.map(s => s.comboValue)
 
-  return component(sources,
+  return [
     <>
       <div>Color:</div>
       <select sel={select} defaultValue={comboValue$}>
@@ -113,7 +112,7 @@ function Combobox (sources) {
         category: 'search'
       })
     }
-  )
+  ]
 }
 
 function ComboboxWithLens (sources) {
@@ -127,7 +126,7 @@ function ComboboxWithLens (sources) {
       .map(event => event.target.value)
       .map(value => prevState => value)
 
-  return component(sources,
+  return [
     <>
       <div>Color:</div>
       <select sel={select} defaultValue={state$}>
@@ -138,14 +137,12 @@ function ComboboxWithLens (sources) {
       </select>
       <div>state: "{state$}"</div>
     </>,
-    {
-      state: reducer$
-    }
-  )
+    { state: reducer$ }
+  ]
 }
 
 function Card (sources) {
-  return component(sources,
+  return (
     <div
       className='uk-margin-right uk-width-1-4 uk-padding-small uk-card uk-card-default uk-card-body uk-card-primary'
       style={{ ...sources.props.style, minWidth: 180, maxWidth: 300 }}
@@ -158,13 +155,15 @@ function Card (sources) {
 }
 
 function ShowState (sources) {
-  return component(sources,
-    <Code>state: {sources.state.stream.map(state => JSON.stringify(state))}</Code>
+  return (
+    <Code>
+      state: {sources.state.stream.map(state => JSON.stringify(state))}
+    </Code>
   )
 }
 
 function Code (sources) {
-  return component(sources,
+  return (
     <span className='uk-text-small' style={{ fontSize: 12, fontFamily: 'consolas, monospace' }}>
       {sources.props.children}
     </span>
@@ -178,7 +177,7 @@ function main (sources) {
 
   const color$ = state$.map(state => state.comboValue)
 
-  return component(sources,
+  return [
     <div className='uk-padding-small'>
       <div className='uk-flex uk-margin'>
 
@@ -253,10 +252,8 @@ function main (sources) {
       </div>
 
     </div>,
-    {
-      state: reducer$
-    }
-  )
+    { state: reducer$ }
+  ]
 }
 
 const drivers = {
@@ -264,4 +261,4 @@ const drivers = {
   HTTP: makeHTTPDriver()
 }
 
-run(withState(main), drivers)
+run(withState(withPower(main)), drivers)

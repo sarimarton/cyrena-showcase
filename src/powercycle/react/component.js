@@ -62,11 +62,17 @@ export function useCycleState (sources) {
 
 export function StateLens (sources) {
   return component(
-    sources,
     createElement(Fragment, null, sources.props.children),
-    {}
+    {},
+    sources
   )
 }
 
-export const component = (sources, vdom, otherSinks, config) =>
-  powerCycleComponent(sources, vdom, { ...CONFIG, otherSinks, ...config })
+export function withPower(Cmp) {
+  return function(sources) {
+    return component(createElement(Cmp), null, sources)
+  }
+}
+
+export const component = (vdom, eventSinks, sources, config) =>
+  powerCycleComponent(vdom, { ...CONFIG, sources, eventSinks, ...config })
