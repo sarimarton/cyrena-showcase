@@ -59,24 +59,26 @@ const makeTraverseAction = config => (acc, val, path) => {
     const cmp = isCmp &&
       (lens ? isolate(val.type, lens) : val.type)
 
-    const res = castArray(
+    // We put it in an array to handle different output styles below
+    const cmpOutput = castArray(
       isCmp && cmp({ ...config.sources, ...pick(val, ['key', 'props']) })
     )
 
-    // Allows shortcut return value, like: return <div>...</div> or with sinks:
-    // return [<div>...</div>, { state: ... }]
+    // Allow shortcut return value, like: return <div>...</div>
+    // or with sinks: return [<div>...</div>, { state: ... }]
     // In the shortcut form, there's no need to pass the sources object, as it
-    // can be accessed from the config - an upper component. But there are
-    // two caveats:
-    // 1. The function will no longer be a standard cyclejs component
-    // 2. There's still at least one component() call must be at the top
-    const sinks = isElement(res[0])
-      ? component(res[0], {
+    // can be accessed from the config - which eventually comes from any
+    // initial component() call at the top of the hierarchy, or with the
+    // withPower() utility.
+    const sinks = isElement(cmpOutput[0])
+      // it's a shorthand return value
+      ? component(cmpOutput[0], {
         ...config,
-        eventSinks: res[1],
-        sources: res[2] || config.sources
+        eventSinks: cmpOutput[1],
+        sources: cmpOutput[2] || config.sources
       })
-      : res[0]
+      // it's a regular cycljs sinks object
+      : cmpOutput[0]
 
     acc.push({ val, path, isCmp, ...isCmp && { sinks } })
   }
@@ -84,7 +86,7 @@ const makeTraverseAction = config => (acc, val, path) => {
   return [acc, isStream || isCmp]
 }
 
-export const component = (vdom, config) => {
+export function component (vdom, config) {
   const cloneDeep = obj => cloneDeepWith(
     obj,
     value => config.isStreamFn(value) ? value : undefined
