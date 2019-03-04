@@ -9,6 +9,7 @@ import omit from 'lodash/omit'
 import set from 'lodash/set'
 import defaultTo from 'lodash/defaultTo'
 import isObject from 'lodash/isObject'
+
 import isolate from '@cycle/isolate'
 
 const VDOM_ELEMENT_FLAG = Symbol('powercycle.element')
