@@ -3,36 +3,37 @@ import { run } from '@cycle/run'
 import { makeDOMDriver } from '@cycle/react-dom'
 import { makeHTTPDriver } from '@cycle/http'
 import { withState } from '@cycle/state'
-import { useState } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 
-import { pragma, component, ReactComponentWrapper } from './powercycle/react/component.js'
+import { pragma, component, ReactDomain, useCycleState } from './powercycle/react/component.js'
 /** @jsx pragma */
+/** @jsxFrag Fragment */
 
-function ReactComponent () {
+function ReactComponent (props, state) {
   const [count, setCount] = useState(0)
 
   return (
-    <div>
+    <div style={props.style}>
       <div>Counter: {count}</div>
-      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <div><button onClick={() => setCount(count + 1)}>Increment</button></div>
     </div>
   )
 }
 
-function ReactComponentWithCycleState () {
-  const [option, setOption] = useState('option2')
+function ReactComponentWithCycleState (props) {
+  const [state, setState] = useCycleState(props.sources)
 
   return (
-    <div>
+    <>
       <div>Color:</div>
-      <select value={option} onChange={e => { setOption(e.target.value) }}>
+      <select value={state.comboValue} onChange={e => { setState({ comboValue: e.target.value }) }}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>puple</option>
         <option value='green'>green</option>
       </select>
-      <div>state.comboValue: {'comboValue$'}</div>
-    </div>
+      <div>state.comboValue: {state.comboValue}</div>
+    </>
   )
 }
 
@@ -50,10 +51,10 @@ function Counter (sources) {
   const count$ = inc$.fold(count => count + 1, 0)
 
   return component(sources,
-    <div>
+    <>
       <button sel={inc}>Incremenet</button>
       <div>{count$}</div>
-    </div>
+    </>
   )
 }
 
@@ -71,7 +72,7 @@ function Combobox (sources) {
   const comboValue$ = state$.map(s => s.comboValue)
 
   return component(sources,
-    <div>
+    <>
       <div>Color:</div>
       <select sel={select} defaultValue={comboValue$}>
         <option value='#1e87f0'>default</option>
@@ -80,7 +81,7 @@ function Combobox (sources) {
         <option value='green'>green</option>
       </select>
       <div>state.comboValue: {comboValue$}</div>
-    </div>,
+    </>,
     {
       state: reducer$,
       HTTP: xs.of({
@@ -99,7 +100,7 @@ function Card (sources) {
     >
       {sources.props.title &&
         <h3 className='uk-card-title'>{sources.props.title}</h3>}
-      {sources.props.children}
+      <div>{sources.props.children}</div>
     </div>
   )
 }
@@ -125,16 +126,18 @@ function main (sources) {
           <Combobox />
         </Card>
 
-        <Card title='React component'>
-          <ReactComponentWrapper>
-            <ReactComponent />
-          </ReactComponentWrapper>
+        <Card title='React domain'>
+          <ReactDomain>
+            <ReactComponent style={{ width: '90px', float: 'left' }} />
+            <ReactComponent style={{ width: '90px', float: 'left' }} />
+            text node
+          </ReactDomain>
         </Card>
 
         <Card title='React cmp w/ Cycle state'>
-          <ReactComponentWrapper>
+          <ReactDomain>
             <ReactComponentWithCycleState />
-          </ReactComponentWrapper>
+          </ReactDomain>
         </Card>
 
         <Card title='Timer'>
