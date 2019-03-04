@@ -1,4 +1,4 @@
-import { default as xs, Stream, MemoryStream } from 'xstream'
+import xs, { Stream, MemoryStream } from 'xstream'
 import { h } from '@cycle/react'
 import {
   makePragma,
@@ -15,7 +15,7 @@ const CONFIG = {
   isStreamFn: val => val instanceof Stream || val instanceof MemoryStream
 }
 
-export function ReactDomain (sources) {
+export function ReactRealm (sources) {
   const reducer$ = xs.create({
     start: function () {},
     stop: function () {}
@@ -60,19 +60,20 @@ export function useCycleState (sources) {
   ]
 }
 
-export function StateLens (sources) {
+export function Scope (sources) {
   return component(
     createElement(Fragment, null, sources.props.children),
-    {},
+    null,
     sources
   )
 }
 
-export function withPower(Cmp) {
-  return function(sources) {
+export function withPower (Cmp) {
+  return function (sources) {
     return component(createElement(Cmp), null, sources)
   }
 }
 
-export const component = (vdom, eventSinks, sources, config) =>
-  powerCycleComponent(vdom, { ...CONFIG, sources, eventSinks, ...config })
+export function component (vdom, eventSinks, sources, config) {
+  return powerCycleComponent(vdom, { ...CONFIG, sources, eventSinks, ...config })
+}

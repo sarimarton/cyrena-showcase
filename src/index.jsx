@@ -8,10 +8,10 @@ import { Fragment, useState } from 'react'
 import {
   pragma,
   withPower,
-  ReactDomain,
-  StateLens,
+  ReactRealm,
+  Scope,
   useCycleState
-} from './powercycle/react/component.js'
+} from './powercycle/react/component'
 
 /** @jsx pragma */
 /** @jsxFrag Fragment */
@@ -185,18 +185,18 @@ function main (sources) {
           <Combobox />
         </Card>
 
-        <Card title='React domain'>
-          <ReactDomain>
+        <Card title='React realm'>
+          <ReactRealm>
             <ReactComponent style={{ width: '90px', float: 'left' }} />
             <ReactComponent style={{ width: '90px', float: 'left' }} />
             text node
-          </ReactDomain>
+          </ReactRealm>
         </Card>
 
         <Card title='React cmp w/ Cycle state'>
-          <ReactDomain>
+          <ReactRealm>
             <ReactComponentWithCycleState />
-          </ReactDomain>
+          </ReactRealm>
         </Card>
 
         <Card title='Timer'>
@@ -238,16 +238,16 @@ function main (sources) {
           </Code>
         </Card>
 
-        <StateLens lens='comboValue'>
+        <Scope lens='comboValue'>
           <Card title='Lenses'>
             <ComboboxWithLens />
           </Card>
-        </StateLens>
+        </Scope>
 
         <Card title='React cmp w/ Lenses'>
-          <ReactDomain lens='comboValue'>
+          <ReactRealm lens='comboValue'>
             <ReactComponentWithCycleStateAndLens />
-          </ReactDomain>
+          </ReactRealm>
         </Card>
       </div>
 
