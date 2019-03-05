@@ -11,7 +11,7 @@ import {
   ReactRealm,
   Scope,
   useCycleState
-} from './powercycle/react/component'
+} from 'powercycle'
 
 /** @jsx pragma */
 /** @jsxFrag Fragment */
