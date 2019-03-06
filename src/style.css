@@ -1,0 +1,35 @@
+
+.grid {
+  min-width: 800px;
+  max-width: 1250px;
+
+  display: grid;
+  grid-template-columns: repeat(6, 15%);
+  grid-template-rows: 160px;
+
+  grid-column-gap: 20px;
+  grid-row-gap: 20px;
+
+  grid-template-areas:
+    "c1  c1  c5  c5  c5  c4"
+    "c13 c13 c2  c6  c6  c10"
+    "c13 c13 c3  c6  c6  c11"
+    "c13 c13 c12 c12 c8  c9"
+    ;
+}
+
+.grid > .uk-card h5 { color: white }
+
+.grid > .uk-card:nth-child(1) { grid-area: c1; }
+.grid > .uk-card:nth-child(2) { grid-area: c2; }
+.grid > .uk-card:nth-child(3) { grid-area: c3; }
+.grid > .uk-card:nth-child(4) { grid-area: c4; }
+.grid > .uk-card:nth-child(5) { grid-area: c5; }
+.grid > .uk-card:nth-child(6) { grid-area: c6; }
+.grid > .uk-card:nth-child(7) { grid-area: c7; }
+.grid > .uk-card:nth-child(8) { grid-area: c8; }
+.grid > .uk-card:nth-child(9) { grid-area: c9; }
+.grid > .uk-card:nth-child(10) { grid-area: c10; }
+.grid > .uk-card:nth-child(11) { grid-area: c11; }
+.grid > .uk-card:nth-child(12) { grid-area: c12; }
+.grid > .uk-card:nth-child(13) { grid-area: c13; }
