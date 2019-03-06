@@ -337,7 +337,7 @@ function main (sources) {
               .map(value => prevState => value)
 
             return [
-              <input sel={input} value={get('', sources)} />,
+              <input sel={input} defaultValue={get('', sources)} />,
               { state: input$ }
             ]
           }}
