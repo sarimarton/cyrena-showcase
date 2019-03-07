@@ -66,9 +66,8 @@ function ReactComponentWithCycleStateAndLens (props) {
 
 function Counter (sources) {
   const inc = Symbol(0)
-  const inc$ = sources.react.select(inc).events('click')
-
-  const count$ = inc$.fold(count => count + 1, 0)
+  const count$ = sources[inc].click
+    .fold(count => count + 1, 0)
 
   return (
     <>
@@ -83,9 +82,7 @@ function Combobox (sources) {
   const state$ = sources.state.stream
 
   const reducer$ =
-    sources.react
-      .select(select)
-      .events('change')
+    sources[select].change
       .map(event => event.target.value)
       .map(value => prevState => ({ ...prevState, color: value }))
 
@@ -110,9 +107,7 @@ function ComboboxWithLens (sources) {
   const state$ = sources.state.stream
 
   const reducer$ =
-    sources.react
-      .select(select)
-      .events('change')
+    sources[select].change
       .map(event => event.target.value)
       .map(value => prevState => value)
 
@@ -183,7 +178,7 @@ function Code (sources) {
 function CollectionDemo (sources) {
   const add = Symbol(0)
 
-  const add$ = sources.react.select(add).events('click')
+  const add$ = sources[add].click
     .map(event => prevState => ([...prevState, { color: '#1e87f0' }]))
 
   return [
@@ -213,10 +208,7 @@ function CollectionDemo (sources) {
 
               return [
                 <button sel={remove} style={{ float: 'right' }}>Remove</button>,
-                { state: src.react.select(remove).events('click')
-                  .map(event => prevState => undefined) }
-                // soon:
-                // { state: src[remove].click.map(event => state => undefined) }
+                { state: src[remove].click.map(event => prevState => undefined) }
               ]
             }}
 
@@ -238,7 +230,7 @@ function CollectionDemo (sources) {
 function TodoList (sources) {
   const add = Symbol(0)
 
-  const add$ = sources.react.select(add).events('click')
+  const add$ = sources[add].click
     .map(event => prevState => [...prevState, { text: '' }])
 
   const reducer$ = add$
@@ -252,11 +244,11 @@ function TodoList (sources) {
             const remove = Symbol(0)
             const input = Symbol(0)
 
-            const input$ = sources.react.select(input).events('change')
+            const input$ = sources[input].change
               .map(event => event.target.value)
               .map(value => prevState => ({ text: value }))
 
-            const remove$ = sources.react.select(remove).events('click')
+            const remove$ = sources[remove].click
               .map(event => prevState => undefined)
 
             return [
@@ -332,7 +324,7 @@ function main (sources) {
           {sources => {
             const input = Symbol(0)
 
-            const input$ = sources.react.select(input).events('change')
+            const input$ = sources[input].change
               .map(event => event.target.value)
               .map(value => prevState => value)
 
@@ -341,7 +333,6 @@ function main (sources) {
               { state: input$ }
             ]
           }}
-          <br />
         </Card>
 
         <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
