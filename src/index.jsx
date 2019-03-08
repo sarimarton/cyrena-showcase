@@ -189,18 +189,12 @@ function CollectionDemo (sources) {
       <br />
       <div>
         <Collection indexKey='idx'>
+          {/* Different ways to get state key */}
+          {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
+          {/* <Scope lens='idx'>{get()}</Scope> */}
+          {/* {map(s => s.idx)} */}
+          {/* {get('idx')} */}
           <pre>
-            {/* Different ways to get state key */}
-            (
-            {src => <>{src.state.stream.map(s => s.idx)}</>}
-            ,
-            {map(s => s.idx)}
-            ,
-            {get('idx')}
-            ,
-            <Scope lens='idx'>{get()}</Scope>
-            )&nbsp;
-
             <Combobox />
 
             {src => {
@@ -246,7 +240,7 @@ function TodoList (sources) {
 
             const input$ = sources[input].change
               .map(event => event.target.value)
-              .map(value => prevState => ({ text: value }))
+              .map(value => prevState => Object.assign(prevState, { text: value }))
 
             const remove$ = sources[remove].click
               .map(event => prevState => undefined)
