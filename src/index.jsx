@@ -168,7 +168,7 @@ function CollectionDemo (sources) {
   const add = Symbol(0)
 
   const add$ = sources[add].click
-    .map(event => prevState => ([...prevState, { color: '#1e87f0' }]))
+    .map(event => prevState => ([...prevState, { color: '#1e87f0', id: {} }]))
 
   return [
     <>
@@ -177,7 +177,7 @@ function CollectionDemo (sources) {
       </div>
       <br />
       <div>
-        <Collection indexKey='idx'>
+        <Collection>
           {/* Different ways to get state key */}
           {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
           {/* <Scope lens='idx'>{get()}</Scope> */}
@@ -267,7 +267,7 @@ function main (sources) {
 
   const reducer$ = xs.of(() => ({
     color: 'red',
-    list: [{ color: 'red' }, { color: 'green' }],
+    list: [{ color: 'red', id: {} }, { color: 'green', id: {} }],
     todoList: [{ text: 'todo1', id: {} }, { text: 'todo2', id: {} }, { text: 'todo3', id: {} }],
     foo: { bar: { baz: 5 } }
   }))
