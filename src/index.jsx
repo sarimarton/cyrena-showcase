@@ -90,7 +90,7 @@ function Combobox (sources) {
   return [
     <>
       <label>Color: </label>
-      <select sel={select} defaultValue={color$}>
+      <select sel={select} value={color$}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>purple</option>
@@ -113,7 +113,7 @@ function ComboboxWithLens (sources) {
   return [
     <>
       <label>Color: </label>
-      <select sel={select} defaultValue={state$}>
+      <select sel={select} value={state$}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>purple</option>
@@ -122,19 +122,6 @@ function ComboboxWithLens (sources) {
     </>,
     { state: reducer$ }
   ]
-}
-
-function Card (sources) {
-  return (
-    <div
-      className='uk-card uk-card-default uk-padding-small uk-card-primary'
-      style={{ ...sources.props.style }}
-    >
-      {sources.props.title &&
-        <h5>{sources.props.title}</h5>}
-      <div>{sources.props.children}</div>
-    </div>
-  )
 }
 
 function ShowState (sources) {
@@ -259,6 +246,19 @@ function TodoList (sources) {
   ]
 }
 
+function Card (sources) {
+  return (
+    <div
+      className='uk-card uk-card-default uk-padding-small uk-card-primary'
+      style={{ ...sources.props.style }}
+    >
+      {sources.props.title &&
+        <h5>{sources.props.title}</h5>}
+      <div>{sources.props.children}</div>
+    </div>
+  )
+}
+
 function main (sources) {
   const state$ = sources.state.stream
 
@@ -322,7 +322,7 @@ function main (sources) {
               .map(value => prevState => value)
 
             return [
-              <input sel={input} defaultValue={get('', sources)} />,
+              <input sel={input} value={get('', sources)} />,
               { state: input$ }
             ]
           }}
