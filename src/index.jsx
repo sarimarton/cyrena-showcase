@@ -1,4 +1,6 @@
 import xs from 'xstream'
+import sampleCombine from 'xstream/extra/sampleCombine'
+
 import { run } from '@cycle/run'
 import { makeDOMDriver } from '@cycle/react-dom'
 import { withState } from '@cycle/state'
@@ -210,13 +212,15 @@ function CollectionDemo (sources) {
 
 function TodoList (sources) {
   const add = Symbol(0)
+  const input = Symbol(0)
 
   const add$ = sources[add].click
-    .map(event => prevState => [...prevState, { text: '', id: {} }])
+    .compose(sampleCombine(sources[input].change.map(e => e.target.value)))
+    .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
 
   return [
     <>
-      <input /><button sel={add}>Add</button>
+      <input sel={input}/><button sel={add}>Add</button>
       <Collection>
         <div>
           {sources => {
