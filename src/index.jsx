@@ -13,6 +13,7 @@ import {
   ReactRealm,
   useCycleState,
   Collection,
+  COLLECTION_DELETE,
   get,
   map
 } from 'powercycle'
@@ -188,7 +189,7 @@ function CollectionDemo (sources) {
 
               return [
                 <button sel={remove} style={{ float: 'right' }}>Remove</button>,
-                { state: src[remove].click.map(event => prevState => undefined) }
+                { state: src[remove].click.mapTo(COLLECTION_DELETE) }
               ]
             }}
 
@@ -211,14 +212,12 @@ function TodoList (sources) {
   const add = Symbol(0)
 
   const add$ = sources[add].click
-    .map(event => prevState => [...prevState, { text: '' }])
-
-  const reducer$ = add$
+    .map(event => prevState => [...prevState, { text: '', id: {} }])
 
   return [
     <>
       <input /><button sel={add}>Add</button>
-      <Collection indexKey='idx'>
+      <Collection>
         <div>
           {sources => {
             const remove = Symbol(0)
@@ -226,10 +225,10 @@ function TodoList (sources) {
 
             const input$ = sources[input].change
               .map(event => event.target.value)
-              .map(value => prevState => Object.assign(prevState, { text: value }))
+              .map(value => prevState => ({ ...prevState, text: value }))
 
             const remove$ = sources[remove].click
-              .map(event => prevState => undefined)
+              .mapTo(COLLECTION_DELETE)
 
             return [
               <>
@@ -242,7 +241,7 @@ function TodoList (sources) {
         </div>
       </Collection>
     </>,
-    { state: reducer$ }
+    { state: add$ }
   ]
 }
 
@@ -265,7 +264,7 @@ function main (sources) {
   const reducer$ = xs.of(() => ({
     color: 'red',
     list: [{ color: 'red' }, { color: 'green' }],
-    todoList: [{ text: 'todo1' }, { text: 'todo2' }, { text: 'todo3' }],
+    todoList: [{ text: 'todo1', id: {} }, { text: 'todo2', id: {} }, { text: 'todo3', id: {} }],
     foo: { bar: { baz: 5 } }
   }))
 
