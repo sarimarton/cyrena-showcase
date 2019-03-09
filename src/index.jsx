@@ -2,20 +2,19 @@ import xs from 'xstream'
 import { run } from '@cycle/run'
 import { makeDOMDriver } from '@cycle/react-dom'
 import { withState } from '@cycle/state'
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 
 import './style.css'
 
 import {
   pragma,
+  Fragment,
   withPower,
   ReactRealm,
-  Scope,
   useCycleState,
   Collection,
   get,
-  map,
-  component
+  map
 } from 'powercycle'
 
 /** @jsx pragma */
