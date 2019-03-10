@@ -206,18 +206,20 @@ function TodoList (sources) {
 
   const updateValue$ = sources.$.inputField.change
     .map(e => e.target.value)
+    .startWith('')
+
+  const reducerProxy$ = xs.create()
 
   const value$ = xs.merge(
-    addEvent$.mapTo(''),
-    updateValue$
+    updateValue$,
+    reducerProxy$.mapTo('')
   ).startWith('')
 
-  const added$ = updateValue$
-    .map(value => addEvent$.take(1).mapTo(value))
-    .flatten()
-    .map(text => prevState => [...prevState, { text, id: {} }])
+  const reducer$ = addEvent$
+    .compose(sampleCombine(value$))
+    .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
 
-  const reducer$ = added$
+  reducerProxy$.imitate(reducer$)
 
   return [
     <>
