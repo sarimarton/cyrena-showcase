@@ -18,8 +18,7 @@ import {
   Collection,
   COLLECTION_DELETE,
   get,
-  map,
-  $
+  map
 } from 'powercycle'
 
 /** @jsx pragma */
@@ -217,7 +216,7 @@ function TodoList (sources) {
 
   return [
     <>
-      <input sel='addField' value={value$} />
+      <input sel='addField' value={value$} />&nbsp;
       <button sel='addButton'>Add</button>
 
       <Collection>
@@ -230,7 +229,7 @@ function TodoList (sources) {
 
           return [
             <div>
-              <input sel='input' value={get('text', sources)} />
+              <input sel='input' value={get('text', sources)} />&nbsp;
               <button sel='remove'>Remove</button>
             </div>,
             { state: xs.merge(input$, remove$) }
