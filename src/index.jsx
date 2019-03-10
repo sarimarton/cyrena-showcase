@@ -1,5 +1,6 @@
 import xs from 'xstream'
 import sampleCombine from 'xstream/extra/sampleCombine'
+import circular from 'powercycle/util/xstream/circular'
 
 import { run } from '@cycle/run'
 import { makeDOMDriver } from '@cycle/react-dom'
@@ -208,18 +209,16 @@ function TodoList (sources) {
     .map(e => e.target.value)
     .startWith('')
 
-  const reducerProxy$ = xs.create()
+  const [value$, reducer$] = circular(
+    reducer$ => xs.merge(
+      updateValue$,
+      reducer$.mapTo('')
+    ).startWith(''),
 
-  const value$ = xs.merge(
-    updateValue$,
-    reducerProxy$.mapTo('')
-  ).startWith('')
-
-  const reducer$ = addEvent$
-    .compose(sampleCombine(value$))
-    .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
-
-  reducerProxy$.imitate(reducer$)
+    value$ => addEvent$
+      .compose(sampleCombine(value$))
+      .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
+  )
 
   return [
     <>
