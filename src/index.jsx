@@ -17,7 +17,8 @@ import {
   Collection,
   COLLECTION_DELETE,
   get,
-  map
+  map,
+  $
 } from 'powercycle'
 
 /** @jsx pragma */
@@ -81,26 +82,20 @@ function Counter (sources) {
 
 function Combobox (sources) {
   const select = Symbol(0)
-  const state$ = sources.state.stream
-
-  const reducer$ =
-    sources[select].change
-      .map(event => event.target.value)
-      .map(value => prevState => ({ ...prevState, color: value }))
-
-  const color$ = state$.map(s => s.color)
-
   return [
     <>
       <label>Color: </label>
-      <select sel={select} value={color$}>
+      <select sel='select' value={get('color', sources)}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>purple</option>
         <option value='green'>green</option>
       </select>
     </>,
-    { state: reducer$ }
+    { state: sources.$.select.change
+        .map(e => (() => { console.log('asdf'); return 1 })() && e.target.value)
+        .map(value => prevState => ({ ...prevState, color: value }))
+    }
   ]
 }
 
@@ -186,14 +181,10 @@ function CollectionDemo (sources) {
           <pre>
             <Combobox />
 
-            {src => {
-              const remove = Symbol(0)
-
-              return [
-                <button sel={remove} style={{ float: 'right' }}>Remove</button>,
-                { state: src[remove].click.mapTo(COLLECTION_DELETE) }
-              ]
-            }}
+            {src => [
+              <button sel='remove' style={{ float: 'right' }}>Remove</button>,
+              { state: src.$.remove.click.mapTo(COLLECTION_DELETE) }
+            ]}
 
             <br />
 
@@ -211,41 +202,48 @@ function CollectionDemo (sources) {
 }
 
 function TodoList (sources) {
-  const add = Symbol(0)
-  const input = Symbol(0)
+  const addEvent$ = sources.$.addButton.click
 
-  const add$ = sources[add].click
-    .compose(sampleCombine(sources[input].change.map(e => e.target.value)))
-    .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
+  const updateValue$ = sources.$.inputField.change
+    .map(e => e.target.value)
+
+  const value$ = xs.merge(
+    addEvent$.mapTo(''),
+    updateValue$
+  ).startWith('')
+
+  const added$ = updateValue$
+    .map(value => addEvent$.take(1).mapTo(value))
+    .flatten()
+    .map(text => prevState => [...prevState, { text, id: {} }])
+
+  const reducer$ = added$
 
   return [
     <>
-      <input sel={input}/><button sel={add}>Add</button>
+      <input sel='inputField' value={value$} />
+      <button sel='addButton'>Add</button>
+
       <Collection>
-        <div>
-          {sources => {
-            const remove = Symbol(0)
-            const input = Symbol(0)
+        {sources => {
+          const input$ = sources.$.input.change
+            .map(event => event.target.value)
+            .map(value => prevState => ({ ...prevState, text: value }))
 
-            const input$ = sources[input].change
-              .map(event => event.target.value)
-              .map(value => prevState => ({ ...prevState, text: value }))
+          const remove$ = sources.$.remove.click
+            .mapTo(COLLECTION_DELETE)
 
-            const remove$ = sources[remove].click
-              .mapTo(COLLECTION_DELETE)
-
-            return [
-              <>
-                <input sel={input} defaultValue={get('text', sources)} />
-                <button sel={remove}>Remove</button>
-              </>,
-              { state: xs.merge(input$, remove$) }
-            ]
-          }}
-        </div>
+          return [
+            <div>
+              <input sel='input' value={get('text', sources)} />
+              <button sel='remove'>Remove</button>
+            </div>,
+            { state: xs.merge(input$, remove$) }
+          ]
+        }}
       </Collection>
     </>,
-    { state: add$ }
+    { state: reducer$ }
   ]
 }
 
@@ -280,7 +278,7 @@ function main (sources) {
 
       <div className='grid'>
         <Card title='Cycle JS component'>
-          <Combobox />
+          <Combobox /><Combobox />
         </Card>
 
         <Card title='React components under <ReactRealm>'>
@@ -317,18 +315,12 @@ function main (sources) {
 
         <Card title='Simple input' lens='color'>
           Color:
-          {sources => {
-            const input = Symbol(0)
-
-            const input$ = sources[input].change
-              .map(event => event.target.value)
-              .map(value => prevState => value)
-
-            return [
-              <input sel={input} value={get('', sources)} />,
-              { state: input$ }
-            ]
-          }}
+          {sources => [
+            <input sel='input' value={get('', sources)} />,
+            { state: sources.$.input.change
+              .map(e => e.target.value)
+              .map(value => () => value) }
+          ]}
         </Card>
 
         <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
@@ -354,6 +346,7 @@ function main (sources) {
         <Card title='Collection'>
           <CollectionDemo lens='list' />
         </Card>
+
       </div>
     </div>,
     { state: reducer$ }
