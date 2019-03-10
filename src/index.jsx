@@ -93,7 +93,7 @@ function Combobox (sources) {
         <option value='green'>green</option>
       </select>
     </>,
-    { state: sources.$.select.change
+    { state: sources.sel.select.change
         .map(e => (() => { console.log('asdf'); return 1 })() && e.target.value)
         .map(value => prevState => ({ ...prevState, color: value }))
     }
@@ -184,7 +184,7 @@ function CollectionDemo (sources) {
 
             {src => [
               <button sel='remove' style={{ float: 'right' }}>Remove</button>,
-              { state: src.$.remove.click.mapTo(COLLECTION_DELETE) }
+              { state: src.sel.remove.click.mapTo(COLLECTION_DELETE) }
             ]}
 
             <br />
@@ -203,9 +203,9 @@ function CollectionDemo (sources) {
 }
 
 function TodoList (sources) {
-  const addEvent$ = sources.$.addButton.click
+  const addEvent$ = sources.sel.addButton.click
 
-  const updateValue$ = sources.$.inputField.change
+  const updateValue$ = sources.sel.inputField.change
     .map(e => e.target.value)
     .startWith('')
 
@@ -227,11 +227,11 @@ function TodoList (sources) {
 
       <Collection>
         {sources => {
-          const input$ = sources.$.input.change
+          const input$ = sources.sel.input.change
             .map(event => event.target.value)
             .map(value => prevState => ({ ...prevState, text: value }))
 
-          const remove$ = sources.$.remove.click
+          const remove$ = sources.sel.remove.click
             .mapTo(COLLECTION_DELETE)
 
           return [
@@ -318,7 +318,7 @@ function main (sources) {
           Color:
           {sources => [
             <input sel='input' value={get('', sources)} />,
-            { state: sources.$.input.change
+            { state: sources.sel.input.change
               .map(e => e.target.value)
               .map(value => () => value) }
           ]}
