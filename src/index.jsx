@@ -93,8 +93,9 @@ function Combobox (sources) {
         <option value='green'>green</option>
       </select>
     </>,
-    { state: sources.sel.select.change
-        .map(e => (() => { console.log('asdf'); return 1 })() && e.target.value)
+    { state: sources.sel.select.change['target.value']
+        .debug(() => console.info('If this message is logged once at a time, ' +
+          'that means that the view channels are properly scoped automatically.'))
         .map(value => prevState => ({ ...prevState, color: value }))
     }
   ]
@@ -105,8 +106,7 @@ function ComboboxWithLens (sources) {
   const state$ = sources.state.stream
 
   const reducer$ =
-    sources[select].change
-      .map(event => event.target.value)
+    sources[select].change['target.value']
       .map(value => prevState => value)
 
   return [
@@ -161,15 +161,13 @@ function Code (sources) {
 }
 
 function CollectionDemo (sources) {
-  const add = Symbol(0)
-
-  const add$ = sources[add].click
-    .map(event => prevState => ([...prevState, { color: '#1e87f0', id: {} }]))
+  const add$ = sources.sel.addButton.click
+    .map(e => prevState => ([...prevState, { color: '#1e87f0', id: {} }]))
 
   return [
     <>
       <div>
-        <button sel={add}>Add</button>
+        <button sel='addButton'>Add</button>
       </div>
       <br />
       <div>
@@ -203,10 +201,7 @@ function CollectionDemo (sources) {
 }
 
 function TodoList (sources) {
-  const addEvent$ = sources.sel.addButton.click
-
-  const updateValue$ = sources.sel.inputField.change
-    .map(e => e.target.value)
+  const updateValue$ = sources.sel.addField.change['target.value']
     .startWith('')
 
   const [value$, reducer$] = circular(
@@ -215,20 +210,19 @@ function TodoList (sources) {
       reducer$.mapTo('')
     ).startWith(''),
 
-    value$ => addEvent$
+    value$ => sources.sel.addButton.click
       .compose(sampleCombine(value$))
       .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
   )
 
   return [
     <>
-      <input sel='inputField' value={value$} />
+      <input sel='addField' value={value$} />
       <button sel='addButton'>Add</button>
 
       <Collection>
         {sources => {
-          const input$ = sources.sel.input.change
-            .map(event => event.target.value)
+          const input$ = sources.sel.input.change['target.value']
             .map(value => prevState => ({ ...prevState, text: value }))
 
           const remove$ = sources.sel.remove.click
@@ -278,8 +272,21 @@ function main (sources) {
       <h2>Powercycle Showcase</h2>
 
       <div className='grid'>
-        <Card title='Cycle JS component'>
-          <Combobox /><Combobox />
+        <Card title='Cycle JS components'>
+          <div style={{ float: 'left' }}>
+            Automatically scoped:<br />
+            <Combobox />
+            <br />
+            <Combobox />
+          </div>
+          <div style={{ float: 'right' }}>
+            With noscope:<br />
+            <Combobox noscope />
+            <br />
+            <Combobox noscope />
+          </div>
+          <br style={{ clear: 'both' }} />
+          (See the console for testing)
         </Card>
 
         <Card title='React components under <ReactRealm>'>
@@ -302,7 +309,7 @@ function main (sources) {
           Counter: <Counter />
         </Card>
 
-        <Card title='Get state in nested component'>
+        <Card title='State'>
           <ShowState />
         </Card>
 
@@ -318,8 +325,7 @@ function main (sources) {
           Color:
           {sources => [
             <input sel='input' value={get('', sources)} />,
-            { state: sources.sel.input.change
-              .map(e => e.target.value)
+            { state: sources.sel.input.change['target.value']
               .map(value => () => value) }
           ]}
         </Card>
