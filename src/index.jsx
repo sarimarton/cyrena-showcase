@@ -273,7 +273,7 @@ function main (sources) {
       <div className='grid'>
         <Card title='Cycle JS components'>
           <div style={{ float: 'left' }}>
-            Automatically scoped:<br />
+            Auto-scoped:<br />
             <Combobox />
             <br />
             <Combobox />
