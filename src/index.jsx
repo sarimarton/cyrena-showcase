@@ -203,16 +203,21 @@ function TodoList (sources) {
   const updateValue$ = sources.sel.addField.change['target.value']
     .startWith('')
 
-  const [value$, reducer$] = circular(
+  const [value$, itemAdded$] = circular(
     reducer$ => xs.merge(
       updateValue$,
       reducer$.mapTo('')
     ).startWith(''),
 
-    value$ => sources.sel.addButton.click
-      .compose(sampleCombine(value$))
-      .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
+    value$ => xs.merge(
+      sources.sel.addButton.click,
+      sources.sel.addField.keyDown.keyCode
+        .filter(code => code === 13)
+    ).compose(sampleCombine(value$))
   )
+
+  const reducer$ = itemAdded$
+    .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
 
   return [
     <>
