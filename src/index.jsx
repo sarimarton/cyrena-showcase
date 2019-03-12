@@ -9,20 +9,13 @@ import { useState } from 'react'
 
 import './style.css'
 
-import {
-  pragma,
-  Fragment,
-  withPower,
-  ReactRealm,
-  useCycleState,
-  Collection,
-  COLLECTION_DELETE,
-  get,
-  map
-} from 'powercycle'
+import withPower from 'powercycle'
+import { get, map } from 'powercycle/util'
+import { Collection, COLLECTION_DELETE } from 'powercycle/util/Collection'
+import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
 
-/** @jsx pragma */
-/** @jsxFrag Fragment */
+/** @jsx withPower.pragma */
+/** @jsxFrag withPower.Fragment */
 
 function ReactCounter (props, state) {
   const [count, setCount] = useState(0)
