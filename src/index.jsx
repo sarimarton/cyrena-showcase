@@ -10,10 +10,9 @@ import { useState } from 'react'
 import './style.css'
 
 import withPower from 'powercycle'
-import { get, map } from 'powercycle/util'
+import { get, map, Scope } from 'powercycle/util'
 import { Collection, COLLECTION_DELETE } from 'powercycle/util/Collection'
 import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
-
 /** @jsx withPower.pragma */
 /** @jsxFrag withPower.Fragment */
 
@@ -120,7 +119,7 @@ function ShowState (sources) {
   //   react: sources.state.stream.map(state => <Code>{JSON.stringify(state)}</Code>)
   // }
   //
-  // return component(
+  // return power(
   //   <Code>{sources.state.stream.map(state => JSON.stringify(state))}</Code>,
   //   { /* event sinks */ },
   //   sources
@@ -157,16 +156,16 @@ function CollectionDemo (sources) {
     .map(e => prevState => ([...prevState, { color: '#1e87f0', id: {} }]))
 
   return [
-    <>
+    withPower.pragma(withPower.Fragment, null,
       <div>
         <button sel='addButton'>Add</button>
-      </div>
-      <br />
+      </div>,
+      <br />,
       <div>
         <Collection>
           {/* Different ways to get state key */}
           {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
-          {/* <Scope lens='idx'>{get()}</Scope> */}
+          {/* <Scope scope='idx'>{get()}</Scope> */}
           {/* {map(s => s.idx)} */}
           {/* {get('idx')} */}
           <pre>
@@ -187,7 +186,7 @@ function CollectionDemo (sources) {
           </pre>
         </Collection>
       </div>
-    </>,
+    ),
     { state: add$ }
   ]
 }
@@ -311,14 +310,14 @@ function main (sources) {
         </Card>
 
         <Card title='Todo List'>
-          <TodoList lens='todoList' />
+          <TodoList scope='todoList' />
         </Card>
 
         <Card title='Another counter' style={{ display: 'none' }}>
           <Counter />
         </Card>
 
-        <Card title='Simple input' lens='color'>
+        <Card title='Simple input' scope='color'>
           Color:
           {sources => [
             <input sel='input' value={get('', sources)} />,
@@ -335,20 +334,26 @@ function main (sources) {
           </Code>
         </Card>
 
-        <Card title='Lenses'>
-          <ComboboxWithLens lens='color' />
+        <Card title='Scopes'>
+          <ComboboxWithLens scope='color' />
           <br />
-          foo.bar.baz: <ShowState lens='foo.bar.baz' />
+          foo.bar.baz: <ShowState scope='foo.bar.baz' />
+          <Scope scope={{ state: {
+            get: state => state.foo,
+            set: (state, childState) => ({ ...state, foo: childState })
+          } }}>
+            <ShowState />
+          </Scope>
         </Card>
 
-        <Card title='React component + Cycle state + Lenses'>
-          <ReactRealm lens='color'>
+        <Card title='React component + Cycle state + Scope'>
+          <ReactRealm scope='color'>
             <ReactComponentWithCycleStateAndLens />
           </ReactRealm>
         </Card>
 
         <Card title='Collection'>
-          <CollectionDemo lens='list' />
+          <CollectionDemo scope='list' />
         </Card>
 
       </div>
