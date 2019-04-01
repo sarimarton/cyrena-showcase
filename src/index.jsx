@@ -6,6 +6,7 @@ import { run } from '@cycle/run'
 import { makeDOMDriver } from '@cycle/react-dom'
 import { withState } from '@cycle/state'
 import { useState } from 'react'
+import {makeHTTPDriver} from '@cycle/http'
 
 import './style.css'
 
@@ -82,6 +83,9 @@ function Combobox (sources) {
         <option value='red'>red</option>
         <option value='purple'>purple</option>
         <option value='green'>green</option>
+        <option value='gray'>gray</option>
+        <option value='black'>black</option>
+        <option value='orange'>orange</option>
       </select>
     </>,
     { state: sources.sel.select.change['target.value']
@@ -152,17 +156,21 @@ function Code (sources) {
 }
 
 function CollectionDemo (sources) {
-  const add$ = sources.sel.addButton.click
-    .map(e => prevState => ([...prevState, { color: '#1e87f0', id: {} }]))
-
   return [
-    withPower.pragma(withPower.Fragment, null,
+    <>
       <div>
-        <button sel='addButton'>Add</button>
-      </div>,
-      <br />,
+        <Scope scope='foobar.list'>
+          {src => [
+            <button sel='addButton'>Add</button>,
+            { state: src.sel.addButton.click
+              .map(e => prevState => ([...prevState, { color: '#1e87f0', id: {} }]))
+            }
+          ]}
+        </Scope>
+      </div>
+      <br />
       <div>
-        <Collection>
+        <Collection for='foobar.list'>
           {/* Different ways to get state key */}
           {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
           {/* <Scope scope='idx'>{get()}</Scope> */}
@@ -172,22 +180,52 @@ function CollectionDemo (sources) {
             <Combobox />
 
             {src => [
-              <button sel='remove' style={{ float: 'right' }}>Remove</button>,
-              { state: src.sel.remove.click.mapTo(COLLECTION_DELETE) }
+              <button sel='remove' style={{ float: 'right' }}>Remove this</button>,
+              {
+                state: src.sel.remove.click.mapTo(COLLECTION_DELETE),
+                HTTP: src.sel.remove.click.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
+              }
+            ]}
+
+            {src => [
+              <button sel='remove' style={{ float: 'right' }}>Remove below</button>,
+              {
+                outerState: src.sel.remove.click
+                  .compose(sampleCombine(src.state.stream))
+                  .map(([click, state]) => outerState => ({
+                    ...outerState,
+                    foobar: {
+                      ...outerState.foobar,
+                      list: outerState.foobar.list.slice(0, state.$index + 1)
+                    }
+                  }))
+              }
+            ]}
+
+            {src => [
+              <button sel='set' style={{ float: 'right' }}>Set</button>,
+              {
+                outerState: src.sel.set.click
+                  .compose(sampleCombine(src.state.stream))
+                  .map(([click, state]) => outerState => ({
+                    ...outerState,
+                    color: state.color
+                  }))
+              }
             ]}
 
             <br />
 
             {src =>
               <div style={{ color: get('color', src) }}>
+                <br />
                 <ShowState />
               </div>
             }
           </pre>
         </Collection>
       </div>
-    ),
-    { state: add$ }
+    </>
   ]
 }
 
@@ -255,8 +293,8 @@ function main (sources) {
   const state$ = sources.state.stream
 
   const reducer$ = xs.of(() => ({
-    color: 'red',
-    list: [{ color: 'red', id: {} }, { color: 'green', id: {} }],
+    color: 'gray',
+    foobar: { list: [{ color: 'red', id: {} }, { color: 'green', id: {} }, { color: '#1e87f0', id: {} }, { color: 'purple', id: {} }] },
     todoList: [{ text: 'todo1', id: {} }, { text: 'todo2', id: {} }, { text: 'todo3', id: {} }],
     foo: { bar: { baz: 5 } }
   }))
@@ -353,7 +391,7 @@ function main (sources) {
         </Card>
 
         <Card title='Collection'>
-          <CollectionDemo scope='list' />
+          <CollectionDemo />
         </Card>
 
       </div>
@@ -363,7 +401,8 @@ function main (sources) {
 }
 
 const drivers = {
-  react: makeDOMDriver(document.getElementById('app'))
+  react: makeDOMDriver(document.getElementById('app')),
+  HTTP: makeHTTPDriver()
 }
 
 run(withState(withPower(main)), drivers)
