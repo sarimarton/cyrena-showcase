@@ -22,16 +22,16 @@
   },
   "dependencies": {
     "@cycle/http": "^15.1.0",
-    "@cycle/react": "^2.1.0",
+    "@cycle/react": "^2.2.0",
     "@cycle/react-dom": "^2.2.0",
     "@cycle/run": "^5.2.0",
     "@cycle/state": "^1.2.0",
+    "lodash": ">=4.17.13",
     "powercycle": "^0.10.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "style.css": "^1.0.0",
-    "xstream": "^11.11.0",
-    "lodash": ">=4.17.13"
+    "xstream": "^11.11.0"
   },
   "standard": {
     "parser": "babel-eslint"
