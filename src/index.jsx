@@ -6,7 +6,7 @@ import { run } from '@cycle/run'
 import { makeDOMDriver } from '@cycle/react-dom'
 import { withState } from '@cycle/state'
 import { useState } from 'react'
-import {makeHTTPDriver} from '@cycle/http'
+import { makeHTTPDriver } from '@cycle/http'
 
 import './style.css'
 
