@@ -6,6 +6,7 @@
   "scripts": {
     "start": "parcel src/index.pug",
     "build": "parcel build --no-cache src/index.pug",
+    "serve": "cd dist && npx http-server -p 9080",
     "attach-powercycle": "rm -rf node_modules/powercycle && git clone https://github.com/sarimarton/powercycle.git node_modules/powercycle",
     "postinstall": "npm run attach-powercycle"
   },
