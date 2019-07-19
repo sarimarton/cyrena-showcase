@@ -1,12 +1,13 @@
 {
   "name": "powercycle-poc",
-  "version": "1.0.0",
+  "version": "0.10.1",
   "description": "",
   "main": "src/index.pug",
   "scripts": {
     "start": "parcel src/index.pug",
     "build": "parcel build --no-cache src/index.pug",
-    "serve": "cd dist && npx http-server -p 9080",
+    "build-dev": "NODE_ENV=development && export NODE_ENV && parcel build --no-cache --no-minify src/index.pug",
+    "serve": "cd dist && npx http-server -p",
     "attach-powercycle": "rm -rf node_modules/powercycle && git clone https://github.com/sarimarton/powercycle.git node_modules/powercycle",
     "postinstall": "npm run attach-powercycle"
   },
@@ -14,9 +15,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@babel/core": "^7.5.4",
+    "@babel/core": "^7.5.5",
     "@babel/plugin-proposal-pipeline-operator": "^7.5.0",
-    "@babel/preset-env": "^7.5.4",
+    "@babel/preset-env": "^7.5.5",
     "babel-eslint": "^10.0.2",
     "parcel": "^1.12.3",
     "pug": "^2.0.4",
@@ -28,7 +29,7 @@
     "@cycle/react-dom": "^2.3.0",
     "@cycle/run": "^5.2.0",
     "@cycle/state": "^1.2.0",
-    "lodash": ">=4.17.13",
+    "lodash": "^4.17.15",
     "powercycle": "^0.10.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",

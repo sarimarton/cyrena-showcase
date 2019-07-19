@@ -301,6 +301,15 @@ function main (sources) {
 
   const color$ = state$.map(state => state.color)
 
+  // return [
+  //   <div>
+  //     Timer: {xs.periodic(3000).startWith(-1).take(2)}
+  //     <br />
+  //     {src => <div>div1</div>}
+  //   </div>,
+  //   { state: reducer$ }
+  // ]
+
   return [
     <div className='uk-padding-small'>
       <h2>Powercycle Showcase</h2>
