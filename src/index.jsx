@@ -1,19 +1,20 @@
 import xs from 'xstream'
-import sampleCombine from 'xstream/extra/sampleCombine'
+import sample from 'xstream-sample'
 import circular from 'powercycle/util/xstream/circular'
 
 import { run } from '@cycle/run'
-import { makeDOMDriver } from '@cycle/react-dom'
 import { withState } from '@cycle/state'
 import { useState } from 'react'
 import { makeHTTPDriver } from '@cycle/http'
 
 import './style.css'
 
-import withPower from 'powercycle'
+import withPower, { makeDOMDriver } from 'powercycle'
+
 import { get, map, Scope } from 'powercycle/util'
 import { Collection, COLLECTION_DELETE } from 'powercycle/util/Collection'
 import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
+
 /** @jsx withPower.pragma */
 /** @jsxFrag withPower.Fragment */
 
@@ -74,7 +75,6 @@ function Counter (sources) {
 }
 
 function Combobox (sources) {
-  const select = Symbol(0)
   return [
     <>
       <label>Color: </label>
@@ -88,34 +88,26 @@ function Combobox (sources) {
         <option value='orange'>orange</option>
       </select>
     </>,
-    { state: sources.sel.select.change['target.value']
-        .debug(() => console.info('If this message is logged once at a time, ' +
-          'that means that the view channels are properly scoped automatically.'))
-        .map(value => prevState => ({ ...prevState, color: value }))
+    { state: sources.sel['select'].change['target.value']
+      .debug(() => console.info('If this message is logged once at a time, ' +
+        'that means that the view channels are properly scoped automatically.'))
+      .map(value => prevState => ({ ...prevState, color: value }))
     }
   ]
 }
 
 function ComboboxWithLens (sources) {
-  const select = Symbol(0)
-  const state$ = sources.state.stream
-
-  const reducer$ =
-    sources[select].change['target.value']
-      .map(value => prevState => value)
-
-  return [
+  return (
     <>
       <label>Color: </label>
-      <select sel={select} value={state$}>
+      <select value={get('', sources)} onChange={({ target: { value }}) => () => value}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>purple</option>
         <option value='green'>green</option>
       </select>
-    </>,
-    { state: reducer$ }
-  ]
+    </>
+  )
 }
 
 function ShowState (sources) {
@@ -160,59 +152,75 @@ function CollectionDemo (sources) {
     <>
       <div>
         <Scope scope='foobar.list'>
-          {src => [
-            <button sel='addButton'>Add</button>,
-            { state: src.sel.addButton.click
-              .map(e => prevState => ([...prevState, { color: '#1e87f0', id: {} }]))
-            }
-          ]}
+          <button onClick={ev => prev => [...prev, { color: '#1e87f0' }]}>
+            Add
+          </button>
         </Scope>
       </div>
       <br />
       <div>
         <Collection for='foobar.list'>
-          {/* Different ways to get state key */}
-          {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
-          {/* <Scope scope='idx'>{get()}</Scope> */}
-          {/* {map(s => s.idx)} */}
-          {/* {get('idx')} */}
           <pre>
+            {/* Different ways to get state key */}
+            {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
+            {/* <Scope scope='idx'>{get()}</Scope> */}
+            {/* {map(s => s.idx)} */}
+            {get('$index')}
+
+            .{' '}
+
             <Combobox />
 
+            <button
+              style={{ float: 'right' }}
+              onClick={{
+                state: ev$ => ev$.mapTo(COLLECTION_DELETE),
+                HTTP: ev$ => ev$.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
+              }}
+            >
+              Remove this 2
+            </button>
+
             {src => [
-              <button sel='remove' style={{ float: 'right' }}>Remove this</button>,
+              <button
+                style={{ float: 'right' }}
+                onClick={ev => COLLECTION_DELETE}
+              >Remove this</button>,
               {
-                state: src.sel.remove.click.mapTo(COLLECTION_DELETE),
-                HTTP: src.sel.remove.click.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
+                HTTP: src.el.click.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
               }
             ]}
 
-            {src => [
-              <button sel='remove' style={{ float: 'right' }}>Remove below</button>,
-              {
-                outerState: src.sel.remove.click
-                  .compose(sampleCombine(src.state.stream))
-                  .map(([click, state]) => outerState => ({
-                    ...outerState,
-                    foobar: {
-                      ...outerState.foobar,
-                      list: outerState.foobar.list.slice(0, state.$index + 1)
-                    }
-                  }))
-              }
-            ]}
+            {src =>
+              <button
+                style={{ float: 'right' }}
+                onClick={{
+                  outerState: ev => ev
+                    .compose(sample(src.state.stream))
+                    .map(state => outerState => ({
+                      ...outerState,
+                      foobar: {
+                        ...outerState.foobar,
+                        list: outerState.foobar.list.slice(0, state.$index + 1)
+                      }
+                    }))
+                }}
+              >Remove below</button>
+            }
 
-            {src => [
-              <button sel='set' style={{ float: 'right' }}>Set</button>,
-              {
-                outerState: src.sel.set.click
-                  .compose(sampleCombine(src.state.stream))
-                  .map(([click, state]) => outerState => ({
-                    ...outerState,
-                    color: state.color
-                  }))
-              }
-            ]}
+            {src =>
+              <button
+                style={{ float: 'right' }}
+                onClick={{
+                  outerState: ev => ev
+                    .compose(sample(src.state.stream))
+                    .map(state => outerState => ({
+                      ...outerState,
+                      color: state.color
+                    }))
+                }}
+              >Set</button>
+            }
 
             <br />
 
@@ -230,7 +238,7 @@ function CollectionDemo (sources) {
 }
 
 function TodoList (sources) {
-  const updateValue$ = sources.sel.addField.change['target.value']
+  const updateValue$ = sources.sel['addField'].change['target.value']
     .startWith('')
 
   const [value$, itemAdded$] = circular(
@@ -240,14 +248,14 @@ function TodoList (sources) {
     ).startWith(''),
 
     value$ => xs.merge(
-      sources.sel.addButton.click,
-      sources.sel.addField.keyDown.keyCode
+      sources.sel['addButton'].click,
+      sources.sel['addField'].keyDown.keyCode
         .filter(code => code === 13)
-    ).compose(sampleCombine(value$))
+    ).compose(sample(value$))
   )
 
   const reducer$ = itemAdded$
-    .map(([click, text]) => prevState => [...prevState, { text, id: {} }])
+    .map(text => prevState => [...prevState, { text }])
 
   return [
     <>
@@ -255,21 +263,16 @@ function TodoList (sources) {
       <button sel='addButton'>Add</button>
 
       <Collection>
-        {sources => {
-          const input$ = sources.sel.input.change['target.value']
-            .map(value => prevState => ({ ...prevState, text: value }))
-
-          const remove$ = sources.sel.remove.click
-            .mapTo(COLLECTION_DELETE)
-
-          return [
-            <div>
-              <input sel='input' value={get('text', sources)} />&nbsp;
-              <button sel='remove'>Remove</button>
-            </div>,
-            { state: xs.merge(input$, remove$) }
-          ]
-        }}
+        {sources => (
+          <div>
+            <input
+              value={get('text', sources)}
+              onChange={({ target: { value } }) => prev => ({ ...prev, text: value })}
+            />
+            &nbsp;
+            <button onClick={() => COLLECTION_DELETE}>Remove</button>
+          </div>
+        )}
       </Collection>
     </>,
     { state: reducer$ }
@@ -294,8 +297,8 @@ function main (sources) {
 
   const reducer$ = xs.of(() => ({
     color: 'gray',
-    foobar: { list: [{ color: 'red', id: {} }, { color: 'green', id: {} }, { color: '#1e87f0', id: {} }, { color: 'purple', id: {} }] },
-    todoList: [{ text: 'todo1', id: {} }, { text: 'todo2', id: {} }, { text: 'todo3', id: {} }],
+    foobar: { list: [{ color: 'red' }, { color: 'green' }, { color: '#1e87f0' }, { color: 'purple' }] },
+    todoList: [{ text: 'todo1' }, { text: 'todo2' }, { text: 'todo3' }],
     foo: { bar: { baz: 5 } }
   }))
 
@@ -366,11 +369,9 @@ function main (sources) {
 
         <Card title='Simple input' scope='color'>
           Color:
-          {sources => [
-            <input sel='input' value={get('', sources)} />,
-            { state: sources.sel.input.change['target.value']
-              .map(value => () => value) }
-          ]}
+          { src =>
+            <input value={get('', src)} onChange={({ target: { value }}) => () => value} />
+          }
         </Card>
 
         <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
