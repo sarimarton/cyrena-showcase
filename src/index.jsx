@@ -160,77 +160,73 @@ function CollectionDemo (sources) {
       <br />
       <div>
         <Collection for='foobar.list'>
-          <pre>
-            {/* Different ways to get state key */}
-            {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
-            {/* <Scope scope='idx'>{get()}</Scope> */}
-            {/* {map(s => s.idx)} */}
-            {get('$index')}
+          {src =>
+            <pre>
+              {/* Different ways to get state key */}
+              {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
+              {/* <Scope scope='idx'>{get()}</Scope> */}
+              {/* {map(s => s.idx)} */}
+              {get('index')}
 
-            .{' '}
+              .{' '}
 
-            <Combobox />
+              <Combobox scope='item' />
 
-            <button
-              style={{ float: 'right' }}
-              onClick={{
-                state: ev$ => ev$.mapTo(COLLECTION_DELETE),
-                HTTP: ev$ => ev$.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
-              }}
-            >
-              Remove this 2
-            </button>
-
-            {src => [
-              <button
-                style={{ float: 'right' }}
-                onClick={ev => COLLECTION_DELETE}
-              >Remove this</button>,
-              {
-                HTTP: src.el.click.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
-              }
-            ]}
-
-            {src =>
               <button
                 style={{ float: 'right' }}
                 onClick={{
-                  outerState: ev => ev
+                  state: ev$ => ev$.mapTo(COLLECTION_DELETE),
+                  HTTP: ev$ => ev$.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
+                }}
+              >
+                Remove this 2
+              </button>
+
+              {src => [
+                <button
+                  style={{ float: 'right' }}
+                  onClick={ev => COLLECTION_DELETE}
+                >Remove this</button>,
+                {
+                  HTTP: src.el.click.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
+                }
+              ]}
+
+              <button
+                style={{ float: 'right' }}
+                onClick={{
+                  outerState: ev$ => ev$
                     .compose(sample(src.state.stream))
                     .map(state => outerState => ({
                       ...outerState,
                       foobar: {
                         ...outerState.foobar,
-                        list: outerState.foobar.list.slice(0, state.$index + 1)
+                        list: state.collection.slice(0, state.index + 1)
                       }
                     }))
                 }}
               >Remove below</button>
-            }
 
-            {src =>
               <button
                 style={{ float: 'right' }}
                 onClick={{
-                  outerState: ev => ev
+                  outerState: ev$ => ev$
                     .compose(sample(src.state.stream))
                     .map(state => outerState => ({
                       ...outerState,
-                      color: state.color
+                      color: state.item.color
                     }))
                 }}
               >Set</button>
-            }
 
-            <br />
+              <br />
 
-            {src =>
-              <div style={{ color: get('color', src) }}>
+              <div style={{ color: get('item.color', src) }}>
                 <br />
-                <ShowState />
+                <ShowState scope='item' />
               </div>
-            }
-          </pre>
+            </pre>
+          }
         </Collection>
       </div>
     </>
@@ -263,16 +259,16 @@ function TodoList (sources) {
       <button sel='addButton'>Add</button>
 
       <Collection>
-        {sources => (
-          <div>
+        <div>
+          <Scope scope='item'>
             <input
-              value={get('text', sources)}
+              value={get('text')}
               onChange={({ target: { value } }) => prev => ({ ...prev, text: value })}
             />
-            &nbsp;
-            <button onClick={() => COLLECTION_DELETE}>Remove</button>
-          </div>
-        )}
+          </Scope>
+          &nbsp;
+          <button onClick={() => COLLECTION_DELETE}>Remove</button>
+        </div>
       </Collection>
     </>,
     { state: reducer$ }
