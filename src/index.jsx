@@ -260,12 +260,7 @@ function TodoList (sources) {
 
       <Collection>
         <div>
-          <Scope scope='item'>
-            <input
-              value={get('text')}
-              onChange={({ target: { value } }) => prev => ({ ...prev, text: value })}
-            />
-          </Scope>
+          <input scope='item.text' value={get()} onChange={({ target: { value } }) => () => value} />
           &nbsp;
           <button onClick={() => COLLECTION_DELETE}>Remove</button>
         </div>
