@@ -15,9 +15,6 @@ import { get, map, Scope } from 'powercycle/util'
 import { Collection, COLLECTION_DELETE } from 'powercycle/util/Collection'
 import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
 
-/** @jsx withPower.pragma */
-/** @jsxFrag withPower.Fragment */
-
 function ReactCounter (props, state) {
   const [count, setCount] = useState(0)
 
@@ -151,11 +148,9 @@ function CollectionDemo (sources) {
   return [
     <>
       <div>
-        <Scope scope='foobar.list'>
-          <button onClick={ev => prev => [...prev, { color: '#1e87f0' }]}>
-            Add
-          </button>
-        </Scope>
+        <button scope='foobar.list' onClick={ev => prev => [...prev, { color: '#1e87f0' }]}>
+          Add
+        </button>
       </div>
       <br />
       <div>
