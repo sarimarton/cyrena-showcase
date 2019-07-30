@@ -1,6 +1,6 @@
 import xs from 'xstream'
 import sample from 'xstream-sample'
-import circular from 'powercycle/util/xstream/circular'
+import { circular } from 'powercycle/util/xstream'
 
 import { run } from '@cycle/run'
 import { withState } from '@cycle/state'
@@ -11,8 +11,10 @@ import './style.css'
 
 import withPower, { makeDOMDriver } from 'powercycle'
 
-import { get, map, Scope, If } from 'powercycle/util'
-import { Collection, COLLECTION_DELETE } from 'powercycle/util/Collection'
+import {
+  get, map, Scope, If, Collection, COLLECTION_DELETE
+} from 'powercycle/util'
+
 import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
 
 function ReactCounter (props, state) {
