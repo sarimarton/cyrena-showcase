@@ -11,7 +11,7 @@ import './style.css'
 
 import withPower, { makeDOMDriver } from 'powercycle'
 
-import { get, map, Scope } from 'powercycle/util'
+import { get, map, Scope, If } from 'powercycle/util'
 import { Collection, COLLECTION_DELETE } from 'powercycle/util/Collection'
 import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
 
@@ -155,38 +155,38 @@ function CollectionDemo (sources) {
       <br />
       <div>
         <Collection for='foobar.list'>
-          {src =>
-            <pre>
-              {/* Different ways to get state key */}
-              {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
-              {/* <Scope scope='idx'>{get()}</Scope> */}
-              {/* {map(s => s.idx)} */}
-              {get('index')}
+          <pre>
+            {/* Different ways to get state key */}
+            {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
+            {/* <Scope scope='idx'>{get()}</Scope> */}
+            {/* {map(s => s.idx)} */}
+            {get('index')}
 
-              .{' '}
+            .{' '}
 
-              <Combobox scope='item' />
+            <Combobox scope='item' />
 
+            <button
+              style={{ float: 'right' }}
+              onClick={{
+                state: ev$ => ev$.mapTo(COLLECTION_DELETE),
+                HTTP: ev$ => ev$.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
+              }}
+            >
+              Remove this 2
+            </button>
+
+            {src => [
               <button
                 style={{ float: 'right' }}
-                onClick={{
-                  state: ev$ => ev$.mapTo(COLLECTION_DELETE),
-                  HTTP: ev$ => ev$.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
-                }}
-              >
-                Remove this 2
-              </button>
+                onClick={ev => COLLECTION_DELETE}
+              >Remove this</button>,
+              {
+                HTTP: src.el.click.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
+              }
+            ]}
 
-              {src => [
-                <button
-                  style={{ float: 'right' }}
-                  onClick={ev => COLLECTION_DELETE}
-                >Remove this</button>,
-                {
-                  HTTP: src.el.click.mapTo({ url: '?this-request-tests-that-collection-picks-up-all-sinks' })
-                }
-              ]}
-
+            {src => <>
               <button
                 style={{ float: 'right' }}
                 onClick={{
@@ -213,15 +213,15 @@ function CollectionDemo (sources) {
                     }))
                 }}
               >Set</button>
+            </>}
 
+            <br />
+
+            <div style={{ color: get('item.color') }}>
               <br />
-
-              <div style={{ color: get('item.color', src) }}>
-                <br />
-                <ShowState scope='item' />
-              </div>
-            </pre>
-          }
+              <ShowState scope='item' />
+            </div>
+          </pre>
         </Collection>
       </div>
     </>
@@ -250,12 +250,17 @@ function TodoList (sources) {
 
   return [
     <>
-      <input sel='addField' value={value$} />&nbsp;
+      <input sel='addField' value={value$} style={{ width: 50 }} />&nbsp;
       <button sel='addButton'>Add</button>
 
       <Collection>
         <div>
-          <input scope='item.text' value={get()} onChange={({ target: { value } }) => () => value} />
+          <input
+            scope='item.text'
+            value={get()}
+            onChange={({ target: { value } }) => () => value}
+            style={{ width: 50 }}
+          />
           &nbsp;
           <button onClick={() => COLLECTION_DELETE}>Remove</button>
         </div>
@@ -290,15 +295,6 @@ function main (sources) {
 
   const color$ = state$.map(state => state.color)
 
-  // return [
-  //   <div>
-  //     Timer: {xs.periodic(3000).startWith(-1).take(2)}
-  //     <br />
-  //     {src => <div>div1</div>}
-  //   </div>,
-  //   { state: reducer$ }
-  // ]
-
   return [
     <div className='uk-padding-small'>
       <h2>Powercycle Showcase</h2>
@@ -327,12 +323,50 @@ function main (sources) {
             <ReactCounter style={{ width: '90px', float: 'left' }} />
             text node
           </ReactRealm>
-        </Card>
-
-        <Card title='React component + Cycle state'>
+          <br /><br />
+          With Cycle state:&nbsp;
           <ReactRealm>
             <ReactComboboxWithCycleState />
           </ReactRealm>
+          <br />
+          With Cycle state + Scope:&nbsp;
+          <ReactRealm scope='color'>
+            <ReactComponentWithCycleStateAndLens />
+          </ReactRealm>
+        </Card>
+
+        <Card title='Conditionals'>
+          &lt;If ...>:&nbsp;
+          <If cond={state => ['gray', 'red'].includes(state.color)}
+            then={<>
+              Red or gray!&nbsp;
+              <Combobox />
+            </>}
+            else={'Not red and not gray'}
+          />
+          <br />
+          if prop:&nbsp;
+          <span if={state => ['gray', 'red'].includes(state.color)}>
+            Red or gray
+          </span>
+          <br /><br />
+          prop order tests:<br />
+          <small>
+            scope + if (should show true or nothing):&nbsp;
+            <span scope={{ state: {
+              get: state => ['gray', 'red'].includes(state.color)
+            } }} if={state => state}>
+              {map(String)}
+            </span>
+            <br />
+            if + scope (should show the color or nothing):&nbsp;
+            <span
+              if={state => ['gray', 'red'].includes(state.color)}
+              scope='color'
+            >
+              {get()}
+            </span>
+          </small>
         </Card>
 
         <Card title='Little stuff'>
@@ -355,14 +389,12 @@ function main (sources) {
 
         <Card title='Simple input' scope='color'>
           Color:
-          { src =>
-            <input value={get('', src)} onChange={({ target: { value }}) => () => value} />
-          }
+          <input value={get()} onChange={({ target: { value } }) => () => value} />
         </Card>
 
         <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
 
-        <Card title='Stream DOM prop' style={{ background: color$ }}>
+        <Card title='Stream in nested DOM prop' style={{ background: color$ }}>
           <Code>
             &lt;div style={'{{'} background: color$ {}}}&gt;
           </Code>
@@ -371,7 +403,9 @@ function main (sources) {
         <Card title='Scopes'>
           <ComboboxWithLens scope='color' />
           <br />
-          foo.bar.baz: <ShowState scope='foo.bar.baz' />
+          foo.bar.baz:&nbsp;
+          <ShowState scope='foo.bar.baz' />
+          <br />
           <Scope scope={{ state: {
             get: state => state.foo,
             set: (state, childState) => ({ ...state, foo: childState })
@@ -380,16 +414,9 @@ function main (sources) {
           </Scope>
         </Card>
 
-        <Card title='React component + Cycle state + Scope'>
-          <ReactRealm scope='color'>
-            <ReactComponentWithCycleStateAndLens />
-          </ReactRealm>
-        </Card>
-
         <Card title='Collection'>
           <CollectionDemo />
         </Card>
-
       </div>
     </div>,
     { state: reducer$ }
