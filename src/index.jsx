@@ -336,10 +336,9 @@ function main (sources) {
             <ReactComponentWithCycleStateAndLens />
           </ReactRealm>
         </Card>
-
         <Card title='Conditionals'>
           &lt;If ...>:&nbsp;
-          <If cond={state => ['gray', 'red'].includes(state.color)}
+          <If cond={map(state => ['gray', 'red'].includes(state.color))}
             then={<>
               Red or gray!&nbsp;
               <Combobox />
@@ -348,7 +347,7 @@ function main (sources) {
           />
           <br />
           if prop:&nbsp;
-          <span if={state => ['gray', 'red'].includes(state.color)}>
+          <span if={map(state => ['gray', 'red'].includes(state.color))}>
             Red or gray
           </span>
           <br /><br />
@@ -357,13 +356,13 @@ function main (sources) {
             scope + if (should show true or nothing):&nbsp;
             <span scope={{ state: {
               get: state => ['gray', 'red'].includes(state.color)
-            } }} if={state => state}>
+            } }} if={map(state => state)}>
               {map(String)}
             </span>
             <br />
             if + scope (should show the color or nothing):&nbsp;
             <span
-              if={state => ['gray', 'red'].includes(state.color)}
+              if={map(state => ['gray', 'red'].includes(state.color))}
               scope='color'
             >
               {get()}

@@ -28,7 +28,7 @@
     "@cycle/react-dom": "^2.3.0",
     "@cycle/run": "^5.2.0",
     "@cycle/state": "^1.2.0",
-    "powercycle": "^0.13.1",
+    "powercycle": "^0.14.1",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "style.css": "^1.0.0",
