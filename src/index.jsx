@@ -12,7 +12,7 @@ import './style.css'
 import withPower, { makeDOMDriver } from 'powercycle'
 
 import {
-  $, $get, $map, $if, Scope, If, Collection, COLLECTION_DELETE
+  $, $map, $if, Scope, If, Collection, COLLECTION_DELETE
 } from 'powercycle/util'
 
 import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
@@ -77,7 +77,7 @@ function Combobox (sources) {
   return [
     <>
       <label>Color: </label>
-      <select sel='select' value={$get('color')}>
+      <select sel='select' value={$.color}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>purple</option>
@@ -99,7 +99,7 @@ function ComboboxWithLens (sources) {
   return (
     <>
       <label>Color: </label>
-      <select value={$get()} onChange={({ target: { value }}) => () => value}>
+      <select value={$} onChange={({ target: { value }}) => () => value}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>purple</option>
@@ -162,7 +162,7 @@ function CollectionDemo (sources) {
             {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
             {/* <Scope scope='idx'>{$get()}</Scope> */}
             {/* {$map(s => s.idx)} */}
-            {$get('index')}
+            {$.index}
 
             .{' '}
 
@@ -219,7 +219,7 @@ function CollectionDemo (sources) {
 
             <br />
 
-            <div style={{ color: $get('item.color') }}>
+            <div style={{ color: $.item.color }}>
               <br />
               <ShowState scope='item' />
             </div>
@@ -362,6 +362,12 @@ function main (sources) {
           </span>
           <br />
 
+          $if() function w/ $ proxy:&nbsp;
+          <span>
+            {$if($.todoList.length, 'We have todos', 'Empty todos')}
+          </span>
+          <br />
+
           <br />
           prop order tests:<br />
           <small>
@@ -378,7 +384,7 @@ function main (sources) {
               if={$map(state => ['gray', 'red'].includes(state.color))}
               scope='color'
             >
-              {$get()}
+              {$}
             </span>
           </small>
         </Card>
@@ -403,7 +409,7 @@ function main (sources) {
 
         <Card title='Simple input' scope='color'>
           Color:
-          <input value={$get()} onChange={({ target: { value } }) => () => value} />
+          <input value={$} onChange={({ target: { value } }) => () => value} />
         </Card>
 
         <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
