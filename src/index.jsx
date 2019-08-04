@@ -162,7 +162,7 @@ function CollectionDemo (sources) {
             {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
             {/* <Scope scope='idx'>{$get()}</Scope> */}
             {/* {$map(s => s.idx)} */}
-            {$.index}
+            {$map(i => i + 1, $.index)}
 
             .{' '}
 
@@ -188,22 +188,7 @@ function CollectionDemo (sources) {
               }
             ]}
 
-            {src => <>
-              <button
-                style={{ float: 'right' }}
-                onClick={{
-                  outerState: ev$ => ev$
-                    .compose(sample(src.state.stream))
-                    .map(state => outerState => ({
-                      ...outerState,
-                      foobar: {
-                        ...outerState.foobar,
-                        list: state.collection.slice(0, state.index + 1)
-                      }
-                    }))
-                }}
-              >Remove below</button>
-
+            {src =>
               <button
                 style={{ float: 'right' }}
                 onClick={{
@@ -214,8 +199,27 @@ function CollectionDemo (sources) {
                       color: state.item.color
                     }))
                 }}
-              >Set</button>
-            </>}
+              >Set 2</button>
+            }
+
+            <button
+              style={{ float: 'right' }}
+              onClick={ev => prev => ({
+                ...prev,
+                outerState: {
+                  ...prev.outerState,
+                  color: prev.item.color
+                }
+              })}
+            >Set</button>
+
+            <button
+              style={{ float: 'right' }}
+              onClick={ev => prev => ({
+                ...prev,
+                collection: prev.collection.slice(0, prev.index + 1)
+              })}
+            >Remove below</button>
 
             <br />
 
@@ -278,8 +282,7 @@ function Card (sources) {
       className='uk-card uk-card-default uk-padding-small uk-card-primary'
       style={{ ...sources.props.style }}
     >
-      {sources.props.title &&
-        <h5>{sources.props.title}</h5>}
+      <h5>{sources.props.title}</h5>
       <div>{sources.props.children}</div>
     </div>
   )
@@ -346,7 +349,7 @@ function main (sources) {
 
           if prop:&nbsp;
           <span if={$map(state => ['gray', 'red'].includes(state.color))}>
-            Red or gray
+            Red or gray - {$(color$).length}
           </span>
           <br />
 
@@ -399,7 +402,7 @@ function main (sources) {
           <ShowState />
         </Card>
 
-        <Card title='Todo List'>
+        <Card title={<>Todo List - {$.todoList.length}</>}>
           <TodoList scope='todoList' />
         </Card>
 
@@ -412,7 +415,7 @@ function main (sources) {
           <input value={$} onChange={({ target: { value } }) => () => value} />
         </Card>
 
-        <Card title={color$.map(color => `Stream travelling through prop: ${color}`)} />
+        <Card title={<>Stream travelling through prop: {color$}</>} />
 
         <Card title='Stream in nested DOM prop' style={{ background: color$ }}>
           <Code>
