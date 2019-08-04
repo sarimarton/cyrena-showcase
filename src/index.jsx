@@ -447,7 +447,7 @@ function main (sources) {
 }
 
 const drivers = {
-  react: makeDOMDriver(document.getElementById('app')),
+  react: makeDOMDriver(document.getElementById('root')),
   HTTP: makeHTTPDriver()
 }
 

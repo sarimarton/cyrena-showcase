@@ -2,7 +2,7 @@
   "name": "powercycle-showcase",
   "version": "0.10.1",
   "description": "",
-  "main": "src/index.pug",
+  "main": "index.html",
   "scripts": {
     "start": "parcel index.html",
     "build": "parcel build --no-cache index.html",
