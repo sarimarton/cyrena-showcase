@@ -1,10 +1,10 @@
 
 .grid {
-  min-width: 820px;
+  min-width: 860px;
   max-width: 1250px;
 
   display: grid;
-  grid-template-columns: repeat(6, 15%);
+  grid-template-columns: 15% 15% 15% 12% 18% 15%;
   grid-template-rows: 160px;
 
   grid-column-gap: 20px;
