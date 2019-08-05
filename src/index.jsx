@@ -12,7 +12,8 @@ import './style.css'
 import withPower, { makeDOMDriver } from 'powercycle'
 
 import {
-  $, $map, $if, Scope, If, Collection, COLLECTION_DELETE
+  $, $map, $if, $not, $and, $or, $eq,
+  Scope, If, Collection, COLLECTION_DELETE
 } from 'powercycle/util'
 
 import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
@@ -103,6 +104,7 @@ function ComboboxWithLens (sources) {
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
         <option value='purple'>purple</option>
+        <option value='gray'>gray</option>
         <option value='green'>green</option>
       </select>
     </>
@@ -342,6 +344,32 @@ function main (sources) {
 
         <Card title='Conditionals'>
           <If cond={$map(state => ['gray', 'red'].includes(state.color))}
+            then={<>Red or gray!&nbsp;<Combobox /></>}
+            else={'Not red and not gray'}
+          />
+          <br />
+
+          <If cond={$not($map(state => ['gray', 'red'].includes(state.color)))}
+            then={'Not red and not gray'}
+            else={<>Red or gray!&nbsp;<Combobox /></>}
+          />
+          <br />
+
+          <If scope='color' cond={$not($and(
+            $not($eq($, 'gray')),
+            $not($map(c => c === 'red'))
+          ))}
+            then={<>Red or gray!&nbsp;<ComboboxWithLens /></>}
+            else={'Not red and not gray'}
+          />
+          <br />
+
+          <If cond={
+            $or(
+              $map(state => state.color === 'gray'),
+              $eq($.color, 'red')
+            )
+          }
             then={<>Red or gray!&nbsp;<Combobox /></>}
             else={'Not red and not gray'}
           />
