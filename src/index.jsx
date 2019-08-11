@@ -431,7 +431,6 @@ function main (sources) {
               {$}
             </span>
           </small>
-
         </Card>
 
         <Card title='Little stuff'>
@@ -481,32 +480,11 @@ function main (sources) {
           <CollectionDemo />
         </Card>
 
-        <Card title='Smelly component stream'>
-          {smellyComponentStream($map(state => {
-            return [<>{state.foobar.list.map((item, key) => {
-              let vdom =
-                item.color === 'gray'
-                  ? <div key={key}>{item.color}</div>
-                  : <input key={key} value={item.color} type='text'
-                      onChange={({ target: { value }}) => prev => ({
-                        ...prev,
-                        foobar: {
-                          list: Object.assign(prev.foobar.list, {
-                            [key]: { color: value }
-                          })
-                        }
-                      })
-                    } />
-                return vdom
-              })
-            }</>, {
-              HTTP: xs.periodic(3000).mapTo({ url: '?' + state.color })
-            }]
-          }))}
-          <hr />
+        <Card title='Smelly component stream (loses focus)'>
           {smellyComponentStream(sources.state.stream.map(state =>
             <>
             {state.foobar.list.map((item, idx) =>
+              // 'key' is a React dependency, it's also a smell
               <div key={idx}>
                 <Combobox scope={{
                   state: {
@@ -526,7 +504,6 @@ function main (sources) {
               </div>
             )}
             </>
-
           ))}
         </Card>
       </div>
