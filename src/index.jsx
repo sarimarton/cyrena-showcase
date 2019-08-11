@@ -12,9 +12,11 @@ import './style.css'
 import withPower, { makeDOMDriver } from 'powercycle'
 
 import {
-  $, $map, $if, $not, $and, $or, $eq,
+  $, $map, $for, $if, $not, $and, $or, $eq,
   Scope, If, Collection, COLLECTION_DELETE
 } from 'powercycle/util'
+
+import { smellyComponentStream } from 'powercycle/src/util/smellyComponentStream.js'
 
 import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
 
@@ -261,7 +263,7 @@ function TodoList (sources) {
       <input sel='addField' value={value$} style={{ width: 50 }} />&nbsp;
       <button sel='addButton'>Add</button>
 
-      <Collection>
+      {$for('',
         <div>
           <input
             scope='item.text'
@@ -272,7 +274,7 @@ function TodoList (sources) {
           &nbsp;
           <button onClick={() => COLLECTION_DELETE}>Remove</button>
         </div>
-      </Collection>
+      )}
     </>,
     { state: reducer$ }
   ]
@@ -375,6 +377,17 @@ function main (sources) {
           />
           <br />
 
+          <If cond={
+            $or(
+              $map(state => state.color === 'gray'),
+              $map(state => state.color === 'red')
+            )
+          }
+            then={<>Red or gray!&nbsp;<Combobox /></>}
+            else={'Not red and not gray'}
+          />
+          <br />
+
           if prop:&nbsp;
           <span if={$map(state => ['gray', 'red'].includes(state.color))}>
             Red or gray - {$(color$).length}
@@ -418,6 +431,7 @@ function main (sources) {
               {$}
             </span>
           </small>
+
         </Card>
 
         <Card title='Little stuff'>
@@ -443,12 +457,10 @@ function main (sources) {
           <input value={$} onChange={({ target: { value } }) => () => value} />
         </Card>
 
-        <Card title={<>Stream travelling through prop: {color$}</>} />
+        <Card scope='color' title={<>Stream travelling through prop: {$}</>} />
 
         <Card title='Stream in nested DOM prop' style={{ background: color$ }}>
-          <Code>
-            &lt;div style={'{{'} background: color$ {}}}&gt;
-          </Code>
+          <Code>&lt;div style={'{{'} background: color$ {}}}&gt;</Code>
         </Card>
 
         <Card title='Scopes'>
@@ -467,6 +479,55 @@ function main (sources) {
 
         <Card title='Collection'>
           <CollectionDemo />
+        </Card>
+
+        <Card title='Smelly component stream'>
+          {smellyComponentStream($map(state => {
+            return [<>{state.foobar.list.map((item, key) => {
+              let vdom =
+                item.color === 'gray'
+                  ? <div key={key}>{item.color}</div>
+                  : <input key={key} value={item.color} type='text'
+                      onChange={({ target: { value }}) => prev => ({
+                        ...prev,
+                        foobar: {
+                          list: Object.assign(prev.foobar.list, {
+                            [key]: { color: value }
+                          })
+                        }
+                      })
+                    } />
+                return vdom
+              })
+            }</>, {
+              HTTP: xs.periodic(3000).mapTo({ url: '?' + state.color })
+            }]
+          }))}
+          <hr />
+          {smellyComponentStream(sources.state.stream.map(state =>
+            <>
+            {state.foobar.list.map((item, idx) =>
+              <div key={idx}>
+                <Combobox scope={{
+                  state: {
+                    get: () => item,
+                    set: (outer, inner) => ({
+                      ...outer,
+                      foobar: {
+                        ...outer.foobar,
+                        list: Object.assign(
+                          outer.foobar.list,
+                          { [idx]: inner }
+                        )
+                      }
+                    })
+                  }
+                }} />
+              </div>
+            )}
+            </>
+
+          ))}
         </Card>
       </div>
     </div>,

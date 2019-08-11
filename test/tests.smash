@@ -1,0 +1,8 @@
+Open Chrome
+
+    Navigate to 'http://localhost:1234/' ..
+
+        Verify [#root > div > div > div:nth-child(1) > div > div:nth-child(2) > select:nth-child(3), 'gray'] is visible
+        Double click '#root > div > div > div:nth-child(8) > div > input'
+        Type 'orange' into '#root > div > div > div:nth-child(8) > div > input'
+        Verify [#root > div > div > div:nth-child(1) > div > div:nth-child(2) > select:nth-child(3), 'orange'] is visible
