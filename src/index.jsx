@@ -13,7 +13,8 @@ import withPower, { makeDOMDriver } from 'powercycle'
 
 import {
   $, $map, $for, $if, $not, $and, $or, $eq,
-  Scope, If, Collection, COLLECTION_DELETE
+  Scope, If, Collection, COLLECTION_DELETE,
+  withLocalState
 } from 'powercycle/util'
 
 import { smellyComponentStream } from 'powercycle/src/util/smellyComponentStream.js'
@@ -79,7 +80,7 @@ function Counter (sources) {
 function Combobox (sources) {
   return [
     <>
-      <label>Color: </label>
+      <label>{sources.props.label || 'Color'}: </label>
       <select sel='select' value={$.color}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
@@ -101,7 +102,7 @@ function Combobox (sources) {
 function ComboboxWithLens (sources) {
   return (
     <>
-      <label>Color: </label>
+      <label>{sources.props.label || 'Color'}: </label>
       <select value={$} onChange={({ target: { value }}) => () => value}>
         <option value='#1e87f0'>default</option>
         <option value='red'>red</option>
@@ -280,6 +281,29 @@ function TodoList (sources) {
   ]
 }
 
+const ScopeAndLocalState = withLocalState(sources => {
+  const initialState$ = xs.of(prev => ({ ...prev, localColor: 'green' }))
+
+  return [
+    <>
+      <Combobox label='Global' />
+      <br />
+      <ComboboxWithLens label='Local' scope='localColor' />
+      <br />
+      foo.bar.baz:&nbsp;
+      <ShowState scope='foo.bar.baz' />
+      <br />
+      <Scope scope={{ state: {
+        get: state => state.foo,
+        set: (state, childState) => ({ ...state, foo: childState })
+      } }}>
+        <ShowState />
+      </Scope>
+    </>,
+    { state: initialState$ }
+  ]
+})
+
 function Card (sources) {
   return (
     <div
@@ -293,16 +317,14 @@ function Card (sources) {
 }
 
 function main (sources) {
-  const state$ = sources.state.stream
-
-  const reducer$ = xs.of(() => ({
+  const initialState$ = xs.of(() => ({
     color: 'gray',
     foobar: { list: [{ color: 'red' }, { color: 'green' }, { color: '#1e87f0' }, { color: 'purple' }] },
     todoList: [{ text: 'todo1' }, { text: 'todo2' }, { text: 'todo3' }],
     foo: { bar: { baz: 5 } }
   }))
 
-  const color$ = state$.map(state => state.color)
+  const color$ = sources.state.stream.map(state => state.color)
 
   return [
     <div className='uk-padding-small'>
@@ -345,20 +367,14 @@ function main (sources) {
         </Card>
 
         <Card title='Conditionals'>
-          <If cond={$map(state => ['gray', 'red'].includes(state.color))}
+          <If cond={color$.map(color => ['gray', 'red'].includes(color))}
             then={<>Red or gray!&nbsp;<Combobox /></>}
             else={'Not red and not gray'}
           />
           <br />
 
-          <If cond={$not($map(state => ['gray', 'red'].includes(state.color)))}
-            then={'Not red and not gray'}
-            else={<>Red or gray!&nbsp;<Combobox /></>}
-          />
-          <br />
-
           <If scope='color' cond={$not($and(
-            $not($eq($, 'gray')),
+            $not($eq('gray')),
             $not($map(c => c === 'red'))
           ))}
             then={<>Red or gray!&nbsp;<ComboboxWithLens /></>}
@@ -377,26 +393,15 @@ function main (sources) {
           />
           <br />
 
-          <If cond={
-            $or(
-              $map(state => state.color === 'gray'),
-              $map(state => state.color === 'red')
-            )
-          }
-            then={<>Red or gray!&nbsp;<Combobox /></>}
-            else={'Not red and not gray'}
-          />
+          $if() function w/ stream:&nbsp;
+          <span>
+            {$if(color$.map(color => ['gray', 'red'].includes(color)), 'Red or gray', 'nope')}
+          </span>
           <br />
 
           if prop:&nbsp;
           <span if={$map(state => ['gray', 'red'].includes(state.color))}>
             Red or gray - {$(color$).length}
-          </span>
-          <br />
-
-          $if() function w/ stream:&nbsp;
-          <span>
-            {$if(color$.map(color => ['gray', 'red'].includes(color)), 'Red or gray', 'nope')}
           </span>
           <br />
 
@@ -462,18 +467,8 @@ function main (sources) {
           <Code>&lt;div style={'{{'} background: color$ {}}}&gt;</Code>
         </Card>
 
-        <Card title='Scopes'>
-          <ComboboxWithLens scope='color' />
-          <br />
-          foo.bar.baz:&nbsp;
-          <ShowState scope='foo.bar.baz' />
-          <br />
-          <Scope scope={{ state: {
-            get: state => state.foo,
-            set: (state, childState) => ({ ...state, foo: childState })
-          } }}>
-            <ShowState />
-          </Scope>
+        <Card title='Scope and local state'>
+          <ScopeAndLocalState />
         </Card>
 
         <Card title='Collection'>
@@ -508,7 +503,7 @@ function main (sources) {
         </Card>
       </div>
     </div>,
-    { state: reducer$ }
+    { state: initialState$ }
   ]
 }
 
@@ -517,4 +512,4 @@ const drivers = {
   HTTP: makeHTTPDriver()
 }
 
-run(withState(withPower(main)), drivers)
+run(withPower(main), drivers)
