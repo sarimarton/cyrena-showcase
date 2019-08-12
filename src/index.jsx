@@ -281,7 +281,7 @@ function TodoList (sources) {
   ]
 }
 
-const ScopeAndLocalState = withLocalState(sources => {
+const ScopeAndLocalState = withLocalState(function (sources) {
   const initialState$ = xs.of(prev => ({ ...prev, localColor: 'green' }))
 
   return [
