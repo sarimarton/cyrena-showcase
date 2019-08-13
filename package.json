@@ -31,7 +31,7 @@
     "@cycle/react-dom": "^2.3.0",
     "@cycle/run": "^5.2.0",
     "@cycle/state": "^1.2.0",
-    "powercycle": "^0.17.0",
+    "powercycle": "^0.18.1",
     "react": "^16.9.0",
     "react-dom": "^16.8.6",
     "xstream": "^11.11.0",
