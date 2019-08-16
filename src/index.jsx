@@ -397,8 +397,7 @@ function main (sources) {
 
           if prop:&nbsp;
           <span if={$map(state => ['gray', 'red'].includes(state.color))}>
-            Red or gray -
-                           {$(color$).length}
+            Red or gray - {$(color$).length}
           </span>
           <br />
 
