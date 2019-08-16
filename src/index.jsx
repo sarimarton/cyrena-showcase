@@ -3,7 +3,6 @@ import sample from 'xstream-sample'
 import { circular } from 'powercycle/util/xstream'
 
 import { run } from '@cycle/run'
-import { withState } from '@cycle/state'
 import { useState } from 'react'
 import { makeHTTPDriver } from '@cycle/http'
 
@@ -14,8 +13,12 @@ import withPower, { makeDOMDriver } from 'powercycle'
 import {
   $, $map, $for, $if, $not, $and, $or, $eq,
   Scope, If, Collection, COLLECTION_DELETE,
-  withLocalState
+  withLocalState, mergeWith
 } from 'powercycle/util'
+
+import {
+  arrayPush
+} from 'powercycle/fp'
 
 import { smellyComponentStream } from 'powercycle/src/util/smellyComponentStream.js'
 
@@ -94,7 +97,7 @@ function Combobox (sources) {
     { state: sources.sel['select'].change['target.value']
       .debug(() => console.info('If this message is logged once at a time, ' +
         'that means that the view channels are properly scoped automatically.'))
-      .map(value => prevState => ({ ...prevState, color: value }))
+      .map(value => mergeWith({ color: value }))
     }
   ]
 }
@@ -155,7 +158,7 @@ function CollectionDemo (sources) {
   return [
     <>
       <div>
-        <button scope='foobar.list' onClick={ev => prev => [...prev, { color: '#1e87f0' }]}>
+        <button scope='foobar.list' onClick={ev => arrayPush({ color: '#1e87f0' })}>
           Add
         </button>
       </div>
@@ -167,7 +170,7 @@ function CollectionDemo (sources) {
             {/* {src => <>{src.state.stream.map(s => s.idx)}</>} */}
             {/* <Scope scope='idx'>{$get()}</Scope> */}
             {/* {$map(s => s.idx)} */}
-            {$map(i => i + 1, $.index)}
+            {$map($ => $.index + 1)}
 
             .{' '}
 
@@ -209,21 +212,14 @@ function CollectionDemo (sources) {
 
             <button
               style={{ float: 'right' }}
-              onClick={ev => prev => ({
-                ...prev,
-                outerState: {
-                  ...prev.outerState,
-                  color: prev.item.color
-                }
-              })}
+              onClick={ev => mergeWith({ outerState: { color: $.item.color } })}
             >Set</button>
 
             <button
               style={{ float: 'right' }}
-              onClick={ev => prev => ({
-                ...prev,
-                collection: prev.collection.slice(0, prev.index + 1)
-              })}
+              onClick={ev => $ =>
+                mergeWith({ collection: $.collection.slice(0, $.index + 1) })($)
+              }
             >Remove below</button>
 
             <br />
@@ -257,7 +253,7 @@ function TodoList (sources) {
   )
 
   const reducer$ = itemAdded$
-    .map(text => prevState => [...prevState, { text }])
+    .map(text => arrayPush({ text }))
 
   return [
     <>
@@ -282,7 +278,7 @@ function TodoList (sources) {
 }
 
 const ScopeAndLocalState = withLocalState(function (sources) {
-  const initialState$ = xs.of(prev => ({ ...prev, localColor: 'green' }))
+  const initialState$ = xs.of(mergeWith({ localColor: 'green' }))
 
   return [
     <>
@@ -401,7 +397,8 @@ function main (sources) {
 
           if prop:&nbsp;
           <span if={$map(state => ['gray', 'red'].includes(state.color))}>
-            Red or gray - {$(color$).length}
+            Red or gray -
+                           {$(color$).length}
           </span>
           <br />
 
