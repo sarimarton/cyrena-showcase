@@ -398,6 +398,20 @@ function main (sources) {
           if prop:&nbsp;
           <span if={$map(state => ['gray', 'red'].includes(state.color))}>
             Red or gray - {$(color$).length}
+            &nbsp;
+            <button onClick={ev => mergeWith({ color: 'red' })}>Set red</button>
+          </span>
+          <br />
+
+          if prop with primitive value:&nbsp;
+          <span if={true}>
+            <button onClick={ev => mergeWith({ color: 'red' })}>Set red</button>
+          </span>
+          <br />
+
+          if prop with primitive value 2 (shouldn't show anything):&nbsp;
+          <span if={undefined}>
+            <button onClick={ev => mergeWith({ color: 'red' })}>Set red</button>
           </span>
           <br />
 
