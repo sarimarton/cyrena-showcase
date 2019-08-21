@@ -273,7 +273,7 @@ function TodoList (sources) {
         </div>
       )}
 
-      Using the collection function:
+      <div>Using the collection function:</div>
 
       {collection($, ({ props: { index, item$ } }) =>
         <div>
