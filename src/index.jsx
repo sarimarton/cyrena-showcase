@@ -12,12 +12,12 @@ import withPower, { makeDOMDriver } from 'powercycle'
 
 import {
   $, $map, $for, $if, $not, $and, $or, $eq,
-  Scope, If, Collection, COLLECTION_DELETE,
+  Scope, If, collection, Collection, COLLECTION_DELETE,
   withLocalState, mergeWith
 } from 'powercycle/util'
 
 import {
-  arrayPush
+  arrayPush, omit, compact
 } from 'powercycle/fp'
 
 import { smellyComponentStream } from 'powercycle/src/util/smellyComponentStream.js'
@@ -270,6 +270,20 @@ function TodoList (sources) {
           />
           &nbsp;
           <button onClick={() => COLLECTION_DELETE}>Remove</button>
+        </div>
+      )}
+
+      Using the collection function:
+
+      {collection($, ({ props: { index, item$ } }) =>
+        <div>
+          <input
+            value={$(item$).text}
+            onChange={({ target: { value } }) => mergeWith({ [index]: { text: value } })}
+            style={{ width: 50 }}
+          />
+          &nbsp;
+          <button onClick={() => prev => compact(omit([index])(prev))}>Remove</button>
         </div>
       )}
     </>,
