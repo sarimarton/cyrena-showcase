@@ -8,8 +8,6 @@
     "build": "parcel build --no-cache index.html",
     "build-dev": "NODE_ENV=development && export NODE_ENV && parcel build --no-cache --no-minify index.html",
     "serve": "cd dist && npx http-server -p",
-    "attach-powercycle": "rm -rf node_modules/powercycle && git clone https://github.com/sarimarton/powercycle.git node_modules/powercycle",
-    "postinstall": "npm run attach-powercycle",
     "test": "cd test && smashtest"
   },
   "keywords": [],
