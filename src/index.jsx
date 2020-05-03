@@ -1,28 +1,29 @@
 import xs from 'xstream'
 import sample from 'xstream-sample'
-import { circular } from 'powercycle/util/xstream'
+import { circular } from 'cyrena/util/xstream'
 
 import { run } from '@cycle/run'
 import { useState } from 'react'
+import { withState } from '@cycle/state'
 import { makeHTTPDriver } from '@cycle/http'
 
 import './style.css'
 
-import withPower, { makeDOMDriver } from 'powercycle'
+import withPower, { makeDOMDriver } from 'cyrena'
 
 import {
   $, $map, $for, $if, $not, $and, $or, $eq,
   Scope, If, collection, Collection, COLLECTION_DELETE,
   withLocalState, mergeWith
-} from 'powercycle/util'
+} from 'cyrena/util'
 
 import {
   arrayPush, omit, compact
-} from 'powercycle/fp'
+} from 'cyrena/fp'
 
-import { smellyComponentStream } from 'powercycle/src/util/smellyComponentStream.js'
+import { smellyComponentStream } from 'cyrena/util'
 
-import { ReactRealm, useCycleState } from 'powercycle/util/ReactRealm'
+import { ReactRealm, useCycleState } from 'cyrena/util/ReactRealm'
 
 function ReactCounter (props, state) {
   const [count, setCount] = useState(0)
@@ -536,4 +537,4 @@ const drivers = {
   HTTP: makeHTTPDriver()
 }
 
-run(withPower(main), drivers)
+run(withState(withPower(main)), drivers)

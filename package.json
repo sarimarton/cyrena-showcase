@@ -4,7 +4,7 @@
   "description": "Powercycle Showcase",
   "main": "index.html",
   "scripts": {
-    "start": "parcel index.html",
+    "start": "parcel index.html --port 1001",
     "build": "parcel build --no-cache index.html",
     "build-dev": "NODE_ENV=development && export NODE_ENV && parcel build --no-cache --no-minify index.html",
     "serve": "cd dist && npx http-server -p",
@@ -23,12 +23,14 @@
   },
   "dependencies": {
     "@cycle/http": "^15.1.0",
-    "@cycle/react": "^2.3.0",
-    "@cycle/react-dom": "^2.3.0",
+    "@cycle/isolate": "^5.2.0",
+    "@cycle/react": "^2.7.0",
+    "@cycle/react-dom": "^2.4.0",
     "@cycle/run": "^5.2.0",
-    "@cycle/state": "^1.2.0",
-    "powercycle": "^0.19.1",
-    "react": "^16.9.0",
+    "@cycle/state": "^1.4.0",
+    "@types/react": "^16.9.34",
+    "cyrena": "^0.20.7",
+    "react": "^16.13.1",
     "react-dom": "^16.8.6",
     "xstream": "^11.11.0",
     "xstream-sample": "^1.0.0"
